@@ -20,22 +20,28 @@ A client portal inspired by Wayfront (formerly SPP). Clients can order products/
 | `app/Http/Controllers/Admin/UserController.php` | Full CRUD (no show), blocks self-delete |
 | `app/Http/Requests/Admin/StoreUserRequest.php` | name, email, password+confirm, role |
 | `app/Http/Requests/Admin/UpdateUserRequest.php` | Same but password nullable |
+| `app/Http/Controllers/Admin/RoleController.php` | Full CRUD (no show), blocks delete if users assigned |
+| `app/Http/Requests/Admin/StoreRoleRequest.php` | name validation (lowercase, letters, numbers, underscores) |
+| `app/Http/Requests/Admin/UpdateRoleRequest.php` | Same as store, unique except self |
 | `database/seeders/RoleSeeder.php` | Seeds admin/staff/client roles |
 | `database/seeders/DatabaseSeeder.php` | Calls RoleSeeder, creates admin user |
 
 ### Frontend
 | File | Notes |
 |------|-------|
-| `resources/js/types/admin.ts` | Role, UserRow, UserFormData types |
+| `resources/js/types/admin.ts` | Role, UserRow, UserFormData, RoleRow, RoleFormData types |
 | `resources/js/types/auth.ts` | Added `roles: string[]` to Auth type |
-| `resources/js/layouts/admin/layout.tsx` | Admin sub-layout (mirrors settings layout) |
+| `resources/js/layouts/admin/layout.tsx` | Admin sub-layout with Users + Roles nav |
 | `resources/js/pages/admin/users/index.tsx` | User table with edit/delete per row |
 | `resources/js/pages/admin/users/create.tsx` | Create user form |
 | `resources/js/pages/admin/users/edit.tsx` | Edit user form (password optional) |
+| `resources/js/pages/admin/roles/index.tsx` | Role table with edit/delete per row |
+| `resources/js/pages/admin/roles/create.tsx` | Create role form |
+| `resources/js/pages/admin/roles/edit.tsx` | Edit role form |
 | `resources/js/components/app-sidebar.tsx` | Shows Admin nav item only for role:admin |
 
 ### Roles & seeded data
-- Roles: `admin`, `staff`, `client`
+- Roles: `admin`, `staff`, `client` (can be managed via /admin/roles)
 - Admin user: `admin@example.com` / `admin1234`
 
 ---

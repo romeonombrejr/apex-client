@@ -14,3 +14,15 @@ export type UserFormData = {
     email: string;
     role: Role | null;
 };
+
+export type RoleRow = {
+    id: number;
+    name: string;
+    users_count: number;
+    created_at: string;
+};
+
+export type RoleFormData = {
+    id: number;
+    name: string;
+};
