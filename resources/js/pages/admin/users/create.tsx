@@ -28,7 +28,7 @@ export default function CreateUser({ roles }: PageProps) {
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-semibold">New user</h2>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-sm text-muted-foreground">
                         Create a new account and assign a role.
                     </p>
                 </div>
@@ -38,7 +38,10 @@ export default function CreateUser({ roles }: PageProps) {
                 </Button>
             </div>
 
-            <Form {...UserController.store.form()} className="max-w-md space-y-6">
+            <Form
+                {...UserController.store.form()}
+                className="max-w-md space-y-6"
+            >
                 {({ processing, errors }) => (
                     <>
                         <div className="grid gap-2">
@@ -79,7 +82,9 @@ export default function CreateUser({ roles }: PageProps) {
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password_confirmation">Confirm password</Label>
+                            <Label htmlFor="password_confirmation">
+                                Confirm password
+                            </Label>
                             <PasswordInput
                                 id="password_confirmation"
                                 name="password_confirmation"
@@ -87,7 +92,9 @@ export default function CreateUser({ roles }: PageProps) {
                                 autoComplete="new-password"
                                 placeholder="Confirm password"
                             />
-                            <InputError message={errors.password_confirmation} />
+                            <InputError
+                                message={errors.password_confirmation}
+                            />
                         </div>
 
                         <div className="grid gap-2">
@@ -99,7 +106,8 @@ export default function CreateUser({ roles }: PageProps) {
                                 <SelectContent>
                                     {roles.map((role) => (
                                         <SelectItem key={role} value={role}>
-                                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                                            {role.charAt(0).toUpperCase() +
+                                                role.slice(1)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

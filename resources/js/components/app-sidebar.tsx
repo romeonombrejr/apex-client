@@ -14,7 +14,13 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
-import { index as adminUsers } from '@/routes/admin/users';
+import { index as auditLogsIndex } from '@/routes/admin/audit-logs';
+import { index as backupIndex } from '@/routes/admin/backup';
+import { index as filesIndex } from '@/routes/admin/files';
+import { index as permissionsIndex } from '@/routes/admin/permissions';
+import { index as rolesIndex } from '@/routes/admin/roles';
+import { edit as settingsEdit } from '@/routes/admin/settings';
+import { index as usersIndex } from '@/routes/admin/users';
 import type { NavItem } from '@/types';
 
 const mainNavItems: NavItem[] = [
@@ -23,6 +29,16 @@ const mainNavItems: NavItem[] = [
         href: dashboard(),
         icon: LayoutGrid,
     },
+];
+
+const adminDestinations: { permission: string; href: NavItem['href'] }[] = [
+    { permission: 'users.manage', href: usersIndex() },
+    { permission: 'roles.manage', href: rolesIndex() },
+    { permission: 'permissions.manage', href: permissionsIndex() },
+    { permission: 'settings.manage', href: settingsEdit() },
+    { permission: 'backup.manage', href: backupIndex() },
+    { permission: 'files.manage', href: filesIndex() },
+    { permission: 'audit-logs.view', href: auditLogsIndex() },
 ];
 
 const footerNavItems: NavItem[] = [
@@ -40,12 +56,15 @@ const footerNavItems: NavItem[] = [
 
 export function AppSidebar() {
     const { auth } = usePage().props;
-    const isAdmin = (auth as { roles?: string[] }).roles?.includes('admin') ?? false;
+    const permissions = (auth as { permissions?: string[] }).permissions ?? [];
+    const adminHref = adminDestinations.find((destination) =>
+        permissions.includes(destination.permission),
+    )?.href;
 
     const navItems: NavItem[] = [
         ...mainNavItems,
-        ...(isAdmin
-            ? [{ title: 'Admin', href: adminUsers(), icon: ShieldCheck }]
+        ...(adminHref
+            ? [{ title: 'Admin', href: adminHref, icon: ShieldCheck }]
             : []),
     ];
 

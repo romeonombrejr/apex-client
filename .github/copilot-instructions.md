@@ -1,7 +1,7 @@
 # HelloClient — Project Context
 
 ## Stack
-- Laravel 11, Fortify (auth + 2FA + passkeys), Inertia + React + TypeScript
+- Laravel 13, Fortify (auth + 2FA + passkeys), Inertia + React + TypeScript
 - shadcn/ui + Tailwind, Sonner toasts, spatie/laravel-permission v8, laravel/wayfinder
 - SQLite (local dev), pnpm
 

@@ -29,7 +29,7 @@ export default function EditUser({ user, roles }: PageProps) {
             <div className="flex items-center justify-between">
                 <div>
                     <h2 className="text-lg font-semibold">Edit user</h2>
-                    <p className="text-muted-foreground text-sm">
+                    <p className="text-sm text-muted-foreground">
                         Update account details and role for {user.name}.
                     </p>
                 </div>
@@ -74,7 +74,7 @@ export default function EditUser({ user, roles }: PageProps) {
                         <div className="grid gap-2">
                             <Label htmlFor="password">
                                 New password{' '}
-                                <span className="text-muted-foreground font-normal">
+                                <span className="font-normal text-muted-foreground">
                                     (leave blank to keep current)
                                 </span>
                             </Label>
@@ -88,26 +88,35 @@ export default function EditUser({ user, roles }: PageProps) {
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="password_confirmation">Confirm new password</Label>
+                            <Label htmlFor="password_confirmation">
+                                Confirm new password
+                            </Label>
                             <PasswordInput
                                 id="password_confirmation"
                                 name="password_confirmation"
                                 autoComplete="new-password"
                                 placeholder="Confirm new password"
                             />
-                            <InputError message={errors.password_confirmation} />
+                            <InputError
+                                message={errors.password_confirmation}
+                            />
                         </div>
 
                         <div className="grid gap-2">
                             <Label htmlFor="role">Role</Label>
-                            <Select name="role" defaultValue={user.role ?? undefined} required>
+                            <Select
+                                name="role"
+                                defaultValue={user.role ?? undefined}
+                                required
+                            >
                                 <SelectTrigger id="role">
                                     <SelectValue placeholder="Select a role" />
                                 </SelectTrigger>
                                 <SelectContent>
                                     {roles.map((role) => (
                                         <SelectItem key={role} value={role}>
-                                            {role.charAt(0).toUpperCase() + role.slice(1)}
+                                            {role.charAt(0).toUpperCase() +
+                                                role.slice(1)}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>

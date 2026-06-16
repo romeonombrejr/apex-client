@@ -58,6 +58,8 @@ class UserController extends Controller
 
         $user->assignRole($request->role);
 
+        activity()->causedBy($request->user())->performedOn($user)->log('Created user.');
+
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User created.')]);
 
         return to_route('admin.users.index');
@@ -97,6 +99,8 @@ class UserController extends Controller
 
         $user->syncRoles($request->role);
 
+        activity()->causedBy($request->user())->performedOn($user)->log('Updated user.');
+
         Inertia::flash('toast', ['type' => 'success', 'message' => __('User updated.')]);
 
         return to_route('admin.users.index');
@@ -108,6 +112,8 @@ class UserController extends Controller
     public function destroy(User $user): RedirectResponse
     {
         abort_if($user->is(request()->user()), 403, 'You cannot delete your own account.');
+
+        activity()->causedBy(request()->user())->performedOn($user)->log('Deleted user.');
 
         $user->delete();
 

@@ -6,8 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreRoleRequest;
 use App\Http\Requests\Admin\UpdateRoleRequest;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 class RoleController extends Controller
@@ -18,12 +21,13 @@ class RoleController extends Controller
     public function index(): Response
     {
         $roles = Role::orderBy('name')
-            ->withCount('users')
+            ->withCount(['users', 'permissions'])
             ->get()
             ->map(fn (Role $role) => [
                 'id' => $role->id,
                 'name' => $role->name,
                 'users_count' => $role->users_count,
+                'permissions_count' => $role->permissions_count,
                 'created_at' => $role->created_at,
             ]);
 
@@ -37,7 +41,9 @@ class RoleController extends Controller
      */
     public function create(): Response
     {
-        return Inertia::render('admin/roles/create');
+        return Inertia::render('admin/roles/create', [
+            'groupedPermissions' => $this->groupedPermissions(),
+        ]);
     }
 
     /**
@@ -45,10 +51,14 @@ class RoleController extends Controller
      */
     public function store(StoreRoleRequest $request): RedirectResponse
     {
-        Role::create([
+        $role = Role::create([
             'name' => $request->name,
             'guard_name' => 'web',
         ]);
+
+        $role->syncPermissions($request->permissions ?? []);
+
+        activity()->causedBy($request->user())->performedOn($role)->log('Created role.');
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role created.')]);
 
@@ -64,7 +74,9 @@ class RoleController extends Controller
             'role' => [
                 'id' => $role->id,
                 'name' => $role->name,
+                'permissions' => $role->permissions->pluck('name'),
             ],
+            'groupedPermissions' => $this->groupedPermissions(),
         ]);
     }
 
@@ -77,6 +89,10 @@ class RoleController extends Controller
             'name' => $request->name,
         ]);
 
+        $role->syncPermissions($request->permissions ?? []);
+
+        activity()->causedBy($request->user())->performedOn($role)->log('Updated role.');
+
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role updated.')]);
 
         return to_route('admin.roles.index');
@@ -85,14 +101,32 @@ class RoleController extends Controller
     /**
      * Remove the specified role.
      */
-    public function destroy(Role $role): RedirectResponse
+    public function destroy(Request $request, Role $role): RedirectResponse
     {
         abort_if($role->users()->exists(), 403, 'Cannot delete a role that has users assigned to it.');
+
+        activity()->causedBy($request->user())->performedOn($role)->log('Deleted role.');
 
         $role->delete();
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Role deleted.')]);
 
         return to_route('admin.roles.index');
+    }
+
+    /**
+     * Get all permissions grouped by their group name, for the role form.
+     *
+     * @return Collection<string, Collection<int, array<string, mixed>>>
+     */
+    protected function groupedPermissions()
+    {
+        return Permission::orderBy('name')
+            ->get()
+            ->groupBy(fn (Permission $permission) => $permission->group ?? 'Other')
+            ->map(fn ($permissions) => $permissions->map(fn (Permission $permission) => [
+                'id' => $permission->id,
+                'name' => $permission->name,
+            ]));
     }
 }
