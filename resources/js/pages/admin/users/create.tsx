@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+﻿import { Form, Head } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
 import InputError from '@/components/input-error';
@@ -39,7 +39,8 @@ export default function CreateUser({ roles }: PageProps) {
             </div>
 
             <Form
-                {...UserController.store.form()}
+                action={UserController.store.url()}
+                method="post"
                 className="max-w-md space-y-6"
             >
                 {({ processing, errors }) => (

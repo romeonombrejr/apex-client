@@ -28,6 +28,7 @@ import {
     SidebarMenuItem,
 } from '@/components/ui/sidebar';
 import { dashboard } from '@/routes';
+import { dashboard as adminDashboard } from '@/routes/admin';
 import { index as auditLogsIndex } from '@/routes/admin/audit-logs';
 import { index as backupIndex } from '@/routes/admin/backup';
 import { index as filesIndex } from '@/routes/admin/files';
@@ -94,8 +95,10 @@ export function AppSidebar() {
         }))
         .filter((group) => group.children.length > 0);
 
+    const dashboardHref = visibleGroups.length > 0 ? adminDashboard() : dashboard();
+
     const navItems: (NavItem | NavGroupItem)[] = [
-        { title: 'Dashboard', href: dashboard(), icon: LayoutGrid },
+        { title: 'Dashboard', href: dashboardHref, icon: LayoutGrid },
         ...visibleGroups,
     ];
 

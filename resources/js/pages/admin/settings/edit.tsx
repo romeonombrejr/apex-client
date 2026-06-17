@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+﻿import { Form, Head } from '@inertiajs/react';
 import SettingController from '@/actions/App/Http/Controllers/Admin/SettingController';
 import InputError from '@/components/input-error';
 import { Button } from '@/components/ui/button';
@@ -24,7 +24,8 @@ export default function EditSetting({ setting }: PageProps) {
             </div>
 
             <Form
-                {...SettingController.update.form()}
+                action={SettingController.update.url()}
+                method="post"
                 options={{ preserveScroll: true }}
                 className="max-w-md space-y-6"
             >

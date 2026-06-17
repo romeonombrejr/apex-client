@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+﻿import { Form, Head } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import UserController from '@/actions/App/Http/Controllers/Admin/UserController';
 import InputError from '@/components/input-error';
@@ -40,7 +40,8 @@ export default function EditUser({ user, roles }: PageProps) {
             </div>
 
             <Form
-                {...UserController.update.form(user.id)}
+                action={UserController.update.url(user.id)}
+                method="put"
                 options={{ preserveScroll: true }}
                 className="max-w-md space-y-6"
             >

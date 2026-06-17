@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+﻿import { Form, Head } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import RoleController from '@/actions/App/Http/Controllers/Admin/RoleController';
 import InputError from '@/components/input-error';
@@ -32,7 +32,8 @@ export default function CreateRole({ groupedPermissions }: PageProps) {
             </div>
 
             <Form
-                {...RoleController.store.form()}
+                action={RoleController.store.url()}
+                method="post"
                 className="max-w-2xl space-y-6"
             >
                 {({ processing, errors }) => (

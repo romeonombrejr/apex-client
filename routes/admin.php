@@ -9,9 +9,12 @@ use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\DashboardController;
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
-    Route::redirect('/', '/admin/users');
+    Route::get('dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    Route::redirect('/', '/admin/dashboard');
 
     Route::middleware('permission:users.manage')->group(function () {
         Route::resource('users', UserController::class)->except(['show']);

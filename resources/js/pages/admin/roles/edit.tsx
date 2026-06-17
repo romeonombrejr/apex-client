@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+﻿import { Form, Head } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import RoleController from '@/actions/App/Http/Controllers/Admin/RoleController';
 import InputError from '@/components/input-error';
@@ -33,7 +33,8 @@ export default function EditRole({ role, groupedPermissions }: PageProps) {
             </div>
 
             <Form
-                {...RoleController.update.form(role.id)}
+                action={RoleController.update.url(role.id)}
+                method="put"
                 options={{ preserveScroll: true }}
                 className="max-w-2xl space-y-6"
             >

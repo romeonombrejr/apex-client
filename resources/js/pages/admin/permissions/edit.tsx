@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+﻿import { Form, Head } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import PermissionController from '@/actions/App/Http/Controllers/Admin/PermissionController';
 import InputError from '@/components/input-error';
@@ -31,7 +31,8 @@ export default function EditPermission({ permission }: PageProps) {
             </div>
 
             <Form
-                {...PermissionController.update.form(permission.id)}
+                action={PermissionController.update.url(permission.id)}
+                method="put"
                 options={{ preserveScroll: true }}
                 className="max-w-md space-y-6"
             >

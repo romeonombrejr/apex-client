@@ -1,4 +1,4 @@
-import { Form, Head } from '@inertiajs/react';
+﻿import { Form, Head } from '@inertiajs/react';
 import { Link } from '@inertiajs/react';
 import PermissionController from '@/actions/App/Http/Controllers/Admin/PermissionController';
 import InputError from '@/components/input-error';
@@ -26,7 +26,8 @@ export default function CreatePermission() {
             </div>
 
             <Form
-                {...PermissionController.store.form()}
+                action={PermissionController.store.url()}
+                method="post"
                 className="max-w-md space-y-6"
             >
                 {({ processing, errors }) => (
