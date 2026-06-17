@@ -4,7 +4,10 @@
       "Bash(gh api *)",
       "WebFetch(domain:raw.githubusercontent.com)",
       "Bash(ls \"c:/Users/User/docker-projects/\")",
-      "Read(//c/Users/User/docker-projects/**)"
+      "Read(//c/Users/User/docker-projects/**)",
+      "Bash(ls \"C:/laragon/bin/mysql/\" 2>/dev/null || echo \"not found\")",
+      "Read(//c/laragon/bin/mysql/**)",
+      "Bash(\"C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysqldump.exe\" --host=127.0.0.1 --port=3306 --user=root --no-data hello-client)"
     ]
   }
 }

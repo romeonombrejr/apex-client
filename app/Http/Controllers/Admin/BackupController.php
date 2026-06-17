@@ -3,9 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\RestoreBackupJob;
+use App\Jobs\RunBackupJob;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Artisan;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Backup\BackupDestination\Backup;
@@ -38,19 +39,29 @@ class BackupController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $exitCode = Artisan::call('backup:run', ['--only-db' => true]);
+        RunBackupJob::dispatch();
 
-        if ($exitCode !== 0) {
-            report(new \RuntimeException('backup:run failed: '.Artisan::output()));
+        activity()->causedBy($request->user())->log('Initiated a database backup.');
 
-            Inertia::flash('toast', ['type' => 'error', 'message' => __('Backup failed. Check the logs for details.')]);
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Backup started. Refresh the page in a moment to see it.')]);
 
-            return to_route('admin.backup.index');
-        }
+        return to_route('admin.backup.index');
+    }
 
-        activity()->causedBy($request->user())->log('Created a database backup.');
+    /**
+     * Restore the database from the specified backup.
+     */
+    public function restore(Request $request, string $path): RedirectResponse
+    {
+        $backup = $this->findBackup($path);
 
-        Inertia::flash('toast', ['type' => 'success', 'message' => __('Backup created.')]);
+        abort_unless($backup?->exists(), 404);
+
+        RestoreBackupJob::dispatch($path);
+
+        activity()->causedBy($request->user())->log('Initiated a database restore from: '.basename($backup->path()));
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Restore started. The database will be updated shortly.')]);
 
         return to_route('admin.backup.index');
     }

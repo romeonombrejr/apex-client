@@ -36,6 +36,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::middleware('permission:backup.manage')->prefix('backup')->name('backup.')->group(function () {
         Route::get('/', [BackupController::class, 'index'])->name('index');
         Route::post('/', [BackupController::class, 'store'])->name('store');
+        Route::post('{path}/restore', [BackupController::class, 'restore'])->name('restore');
         Route::get('{path}/download', [BackupController::class, 'download'])->name('download');
         Route::delete('{path}', [BackupController::class, 'destroy'])->name('destroy');
     });
