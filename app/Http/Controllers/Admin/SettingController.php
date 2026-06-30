@@ -17,18 +17,8 @@ class SettingController extends Controller
      */
     public function edit(): Response
     {
-        $setting = Setting::current();
-
         return Inertia::render('admin/settings/edit', [
-            'setting' => [
-                'app_name' => $setting->app_name,
-                'logo_path' => $setting->logo_path ? Storage::disk('public')->url($setting->logo_path) : null,
-                'favicon_path' => $setting->favicon_path ? Storage::disk('public')->url($setting->favicon_path) : null,
-                'primary_color' => $setting->primary_color,
-                'seo_title' => $setting->seo_title,
-                'seo_description' => $setting->seo_description,
-                'seo_keywords' => $setting->seo_keywords,
-            ],
+            'setting' => Setting::branding(),
         ]);
     }
 
