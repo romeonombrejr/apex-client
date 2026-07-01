@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\StoreUserRequest;
 use App\Http\Requests\Admin\UpdateUserRequest;
 use App\Models\User;
+use App\Support\TenantLimits;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 use Inertia\Inertia;
 use Inertia\Response;
 use Spatie\Permission\Models\Role;
@@ -50,6 +52,12 @@ class UserController extends Controller
      */
     public function store(StoreUserRequest $request): RedirectResponse
     {
+        if (TenantLimits::reachedUserLimit()) {
+            throw ValidationException::withMessages([
+                'email' => __('Your plan\'s user limit (:max) has been reached. Upgrade to add more users.', ['max' => TenantLimits::maxUsers()]),
+            ]);
+        }
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,

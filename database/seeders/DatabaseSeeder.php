@@ -2,7 +2,7 @@
 
 namespace Database\Seeders;
 
-use App\Models\User;
+use App\Models\SuperAdmin;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -11,21 +11,21 @@ class DatabaseSeeder extends Seeder
     use WithoutModelEvents;
 
     /**
-     * Seed the application's database.
+     * Seed the central database (super admins + plans).
+     *
+     * Tenant databases are seeded separately by TenantDatabaseSeeder when a
+     * tenant is provisioned (or via `php artisan tenants:seed`).
      */
     public function run(): void
     {
-        $this->call(RoleSeeder::class);
-        $this->call(PermissionSeeder::class);
+        $this->call(PlanSeeder::class);
 
-        $admin = User::firstOrCreate(
-            ['email' => 'admin@example.com'],
+        SuperAdmin::firstOrCreate(
+            ['email' => 'super@example.com'],
             [
-                'name' => 'Admin',
-                'password' => bcrypt('admin1234'),
+                'name' => 'Super Admin',
+                'password' => bcrypt('super1234'),
             ]
         );
-
-        $admin->assignRole('admin');
     }
 }

@@ -3,13 +3,10 @@
 namespace Tests\Feature\Settings;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
-class ProfileUpdateTest extends TestCase
+class ProfileUpdateTest extends TenantTestCase
 {
-    use RefreshDatabase;
-
     public function test_profile_page_is_displayed()
     {
         $user = User::factory()->create();

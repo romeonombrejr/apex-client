@@ -27,6 +27,9 @@ class PermissionSeeder extends Seeder
             Permission::firstOrCreate(['name' => $name, 'guard_name' => 'web'], ['group' => $group]);
         }
 
-        Role::findByName('admin')->givePermissionTo(array_keys($permissions));
+        // Be explicit about the guard: tenant provisioning may run inside a request
+        // authenticated on a different guard (e.g. the super admin), which would
+        // otherwise make spatie resolve the wrong default guard here.
+        Role::findByName('admin', 'web')->givePermissionTo(array_keys($permissions));
     }
 }

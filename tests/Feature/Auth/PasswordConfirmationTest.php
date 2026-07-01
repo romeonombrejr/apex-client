@@ -3,14 +3,11 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Inertia\Testing\AssertableInertia as Assert;
-use Tests\TestCase;
+use Tests\TenantTestCase;
 
-class PasswordConfirmationTest extends TestCase
+class PasswordConfirmationTest extends TenantTestCase
 {
-    use RefreshDatabase;
-
     public function test_confirm_password_screen_can_be_rendered()
     {
         $user = User::factory()->create();

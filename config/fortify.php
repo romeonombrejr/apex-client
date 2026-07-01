@@ -1,6 +1,8 @@
 <?php
 
 use Laravel\Fortify\Features;
+use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
+use Stancl\Tenancy\Middleware\PreventAccessFromCentralDomains;
 
 return [
 
@@ -101,7 +103,14 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    // Tenant auth: Fortify's routes (login/register/2FA/passkeys) are scoped to tenant
+    // domains. On a tenant domain the tenant is initialized; on a central domain
+    // PreventAccessFromCentralDomains blocks them (so /login 404s centrally).
+    'middleware' => [
+        'web',
+        InitializeTenancyByDomain::class,
+        PreventAccessFromCentralDomains::class,
+    ],
 
     /*
     |--------------------------------------------------------------------------

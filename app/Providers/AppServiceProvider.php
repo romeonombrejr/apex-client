@@ -29,8 +29,18 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
 
+        // Branding for the blade <head>. Only resolve from the tenant `settings`
+        // table when tenancy is initialized; central requests use config defaults.
         View::composer('app', function ($view): void {
-            $view->with('branding', Setting::branding());
+            $view->with('branding', tenant() ? Setting::branding() : [
+                'app_name' => config('app.name'),
+                'logo_path' => null,
+                'favicon_path' => null,
+                'primary_color' => null,
+                'seo_title' => null,
+                'seo_description' => null,
+                'seo_keywords' => null,
+            ]);
         });
     }
 

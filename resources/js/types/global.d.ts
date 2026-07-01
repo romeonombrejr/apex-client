@@ -8,6 +8,12 @@ declare module 'react' {
     }
 }
 
+export type SuperAdmin = {
+    id: number;
+    name: string;
+    email: string;
+};
+
 declare module '@inertiajs/core' {
     export interface InertiaConfig {
         sharedPageProps: {
@@ -15,6 +21,7 @@ declare module '@inertiajs/core' {
             branding: SettingFormData;
             auth: Auth;
             roles: string[];
+            superAdmin: SuperAdmin | null;
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

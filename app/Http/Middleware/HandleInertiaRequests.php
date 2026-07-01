@@ -36,18 +36,49 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
-        $branding = Setting::branding();
+        $branding = $this->branding();
+
+        // Resolve guards explicitly: `auth:superadmin` sets the default guard to
+        // `superadmin`, so a bare $request->user() on those routes would return a
+        // SuperAdmin (which has no roles/permissions). Tenant users are always the
+        // `web` guard; the super admin is the `superadmin` guard.
+        $user = $request->user('web');
 
         return [
             ...parent::share($request),
             'name' => $branding['app_name'] ?? config('app.name'),
             'branding' => $branding,
             'auth' => [
-                'user' => $request->user(),
-                'roles' => $request->user()?->getRoleNames() ?? [],
-                'permissions' => $request->user()?->getAllPermissions()->pluck('name') ?? [],
+                'user' => $user,
+                'roles' => $user?->getRoleNames() ?? [],
+                'permissions' => $user?->getAllPermissions()->pluck('name') ?? [],
             ],
+            'superAdmin' => $request->user('superadmin'),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+        ];
+    }
+
+    /**
+     * Branding comes from the tenant's `settings` table, which only exists once
+     * tenancy is initialized. On central (super-admin) requests, fall back to
+     * config defaults so we never query a nonexistent central `settings` table.
+     *
+     * @return array<string, string|null>
+     */
+    protected function branding(): array
+    {
+        if (tenant()) {
+            return Setting::branding();
+        }
+
+        return [
+            'app_name' => config('app.name'),
+            'logo_path' => null,
+            'favicon_path' => null,
+            'primary_color' => null,
+            'seo_title' => null,
+            'seo_description' => null,
+            'seo_keywords' => null,
         ];
     }
 }

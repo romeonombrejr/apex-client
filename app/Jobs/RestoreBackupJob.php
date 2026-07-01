@@ -16,6 +16,7 @@ class RestoreBackupJob implements ShouldQueue
     use Dispatchable, InteractsWithQueue, Queueable;
 
     public int $timeout = 300;
+
     public int $tries = 1;
 
     public function __construct(public readonly string $encodedPath) {}
@@ -48,7 +49,7 @@ class RestoreBackupJob implements ShouldQueue
 
     private function extractSql(string $zipPath, string $tempDir): string
     {
-        $zip = new ZipArchive();
+        $zip = new ZipArchive;
 
         if ($zip->open($zipPath) !== true) {
             throw new \RuntimeException("Failed to open backup archive: {$zipPath}");
@@ -79,8 +80,8 @@ class RestoreBackupJob implements ShouldQueue
             ? rtrim($binaryPath, '/\\').DIRECTORY_SEPARATOR.'mysql'
             : 'mysql';
 
-        $host     = config('database.connections.mysql.host', '127.0.0.1');
-        $port     = config('database.connections.mysql.port', '3306');
+        $host = config('database.connections.mysql.host', '127.0.0.1');
+        $port = config('database.connections.mysql.port', '3306');
         $username = config('database.connections.mysql.username', 'root');
         $password = config('database.connections.mysql.password', '');
         $database = config('database.connections.mysql.database');
