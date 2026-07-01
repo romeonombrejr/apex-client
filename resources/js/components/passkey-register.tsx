@@ -7,9 +7,13 @@ import { Label } from '@/components/ui/label';
 
 type Props = {
     onSuccess: () => void;
+    routes?: {
+        options: string;
+        submit: string;
+    };
 };
 
-export default function PasskeyRegistration({ onSuccess }: Props) {
+export default function PasskeyRegistration({ onSuccess, routes }: Props) {
     const [name, setName] = useState(() => {
         const ua = navigator.userAgent;
 
@@ -26,6 +30,7 @@ export default function PasskeyRegistration({ onSuccess }: Props) {
 
     const [showForm, setShowForm] = useState(false);
     const { register, isLoading, error, isSupported } = usePasskeyRegister({
+        ...(routes && { routes }),
         onSuccess: () => {
             setName('');
             setShowForm(false);

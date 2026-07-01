@@ -17,6 +17,7 @@ createInertiaApp({
             case name === 'welcome':
                 return null;
             case name === 'superadmin/login':
+            case name === 'superadmin/two-factor-challenge':
                 return AuthLayout;
             case name.startsWith('superadmin/'):
                 return SuperAdminLayout;

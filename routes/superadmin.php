@@ -3,8 +3,14 @@
 use App\Http\Controllers\Superadmin\DashboardController;
 use App\Http\Controllers\Superadmin\ImpersonationController;
 use App\Http\Controllers\Superadmin\LoginController;
+use App\Http\Controllers\Superadmin\PasskeyController;
+use App\Http\Controllers\Superadmin\PasskeyLoginController;
 use App\Http\Controllers\Superadmin\PlanController;
+use App\Http\Controllers\Superadmin\Settings\ProfileController;
+use App\Http\Controllers\Superadmin\Settings\SecurityController;
 use App\Http\Controllers\Superadmin\TenantController;
+use App\Http\Controllers\Superadmin\TwoFactorChallengeController;
+use App\Http\Controllers\Superadmin\TwoFactorController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -18,9 +24,16 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::prefix('superadmin')->name('superadmin.')->group(function () {
+    // Unauthenticated: login + the second-factor challenge steps.
     Route::middleware('guest:superadmin')->group(function () {
         Route::get('login', [LoginController::class, 'create'])->name('login');
         Route::post('login', [LoginController::class, 'store'])->name('login.store');
+
+        Route::get('two-factor-challenge', [TwoFactorChallengeController::class, 'create'])->name('two-factor.login');
+        Route::post('two-factor-challenge', [TwoFactorChallengeController::class, 'store'])->name('two-factor.login.store');
+
+        Route::get('passkeys/login/options', [PasskeyLoginController::class, 'options'])->name('passkeys.login.options');
+        Route::post('passkeys/login', [PasskeyLoginController::class, 'store'])->name('passkeys.login');
     });
 
     Route::middleware('auth:superadmin')->group(function () {
@@ -36,5 +49,26 @@ Route::prefix('superadmin')->name('superadmin.')->group(function () {
         Route::post('tenants/{tenant}/impersonate', [ImpersonationController::class, 'store'])->name('tenants.impersonate');
 
         Route::resource('plans', PlanController::class)->except(['show', 'create', 'edit']);
+
+        // Account settings
+        Route::prefix('settings')->name('settings.')->group(function () {
+            Route::redirect('/', '/superadmin/settings/profile');
+            Route::get('profile', [ProfileController::class, 'edit'])->name('profile.edit');
+            Route::patch('profile', [ProfileController::class, 'update'])->name('profile.update');
+            Route::get('security', [SecurityController::class, 'edit'])->name('security.edit');
+            Route::put('password', [SecurityController::class, 'updatePassword'])->name('password.update');
+        });
+
+        // Two-factor management
+        Route::post('two-factor', [TwoFactorController::class, 'store'])->name('two-factor.enable');
+        Route::post('two-factor/confirm', [TwoFactorController::class, 'confirm'])->name('two-factor.confirm');
+        Route::delete('two-factor', [TwoFactorController::class, 'destroy'])->name('two-factor.disable');
+        Route::get('two-factor/qr-code', [TwoFactorController::class, 'qrCode'])->name('two-factor.qr-code');
+        Route::get('two-factor/recovery-codes', [TwoFactorController::class, 'recoveryCodes'])->name('two-factor.recovery-codes');
+
+        // Passkey management
+        Route::get('passkeys/register/options', [PasskeyController::class, 'options'])->name('passkeys.register.options');
+        Route::post('passkeys', [PasskeyController::class, 'store'])->name('passkeys.store');
+        Route::delete('passkeys/{superAdminPasskey}', [PasskeyController::class, 'destroy'])->name('passkeys.destroy');
     });
 });

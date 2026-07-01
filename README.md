@@ -21,7 +21,8 @@ provisions and manages every tenant.
   activity log, backups, and branding/SEO settings.
 - **Plans & limits** — assign plans with enforced limits (e.g. max users) per tenant.
 - **Auth** — Laravel Fortify with registration, password reset, email verification,
-  two-factor, and passkeys (per tenant); a separate guard for super admins.
+  two-factor, and passkeys (per tenant); a separate guard for super admins, who also get
+  account settings, TOTP two-factor, and passkey sign-in.
 
 ---
 
@@ -118,7 +119,7 @@ php artisan tenants:backup              # back up every tenant
 php artisan tenants:run "some:command"  # run a command in each tenant context
 
 # Quality
-php artisan test                        # 51 tests
+php artisan test                        # 62 tests
 vendor/bin/pint                         # PHP formatting
 npm run types:check                     # TypeScript
 npm run build

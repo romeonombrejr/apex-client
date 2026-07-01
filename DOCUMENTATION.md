@@ -131,6 +131,45 @@ resource /superadmin/plans (index/store/update/destroy)  superadmin.plans.*
 - `superAdmin` — the current super admin (or `null`).
 - `branding` — tenant branding when a tenant is active, otherwise config defaults.
 
+### Super-admin account security
+
+Super admins have a self-service settings area at `/superadmin/settings`
+(`App\Http\Controllers\Superadmin\Settings\*`, pages under
+`resources/js/pages/superadmin/settings/`):
+
+- **Profile** — update name/email.
+- **Password** — change password (current-password confirmation required).
+- **Two-factor (TOTP)** — authenticator-app 2FA. Enable → scan QR + save recovery codes →
+  confirm with a code. Once enabled, the login flow defers to a **challenge** step
+  (`/superadmin/two-factor-challenge`) that accepts a TOTP code or a recovery code. Reuses
+  Fortify's `TwoFactorAuthenticationProvider` + `TwoFactorAuthenticatable` trait, driven by
+  the custom super-admin `LoginController` (`superadmin.2fa` session key holds the pending
+  login between the password and challenge steps).
+- **Passkeys (WebAuthn)** — add/remove passkeys, and a "Sign in with a passkey" button on
+  the login page.
+
+**Why super-admin passkeys are a parallel implementation.** `laravel/passkeys` is bound to
+a single global model/guard/table (the tenant `web` guard + `users`). Super admins
+therefore use their own `super_admin_passkeys` table and `App\Models\SuperAdminPasskey`,
+with `SuperAdmin` implementing the `PasskeyUser` contract directly (not the package trait).
+The controllers (`Superadmin\PasskeyController`, `Superadmin\PasskeyLoginController`) reuse
+the package's cryptographic validators (`WebAuthn::attestationValidator()` /
+`assertionValidator()`) and the browser-side `@laravel/passkeys` hooks — only the model
+lookup and login are custom. The relying-party ID comes from `config('passkeys.relying_party_id')`
+(derived from `APP_URL`), i.e. the central super-admin host.
+
+> **Gotcha:** the passkey package registers a *global* `Route::bind('passkey', …)` that
+> resolves to the tenant model. The super-admin passkey delete route therefore uses a
+> `{superAdminPasskey}` route parameter to avoid that binding hijacking it.
+
+Relevant migration: `database/migrations/2026_06_20_000005_add_security_to_super_admins.php`
+(2FA columns on `super_admins` + the `super_admin_passkeys` table).
+
+> **Note:** a WebAuthn ceremony can't be exercised headlessly (it needs a real
+> authenticator), so passkey registration/login must be verified in a browser. The test
+> suite covers everything else (options generation, auth, deletion, authorization) and the
+> full 2FA enable → confirm → challenge → disable cycle.
+
 ---
 
 ## 5. Super-admin console
@@ -300,8 +339,9 @@ non-colliding tenant tables.
 > shares the schema across tests, so a bare test would migrate the central-only schema and
 > break others depending on run order.
 
-Current coverage: **51 tests** — the converted tenant-side suite (auth, dashboard,
-profile, security), super-admin auth + tenant management, and plan limits.
+Current coverage: **62 tests** — the converted tenant-side suite (auth, dashboard,
+profile, security), super-admin auth + tenant management, plan limits, and super-admin
+account security (profile, password, the full 2FA cycle, and the reachable passkey paths).
 
 ---
 
@@ -311,9 +351,11 @@ profile, security), super-admin auth + tenant management, and plan limits.
 |---|---|
 | Tenancy config | `config/tenancy.php` |
 | Tenant lifecycle events | `app/Providers/TenancyServiceProvider.php` |
-| Central models | `app/Models/{Tenant,Plan,SuperAdmin}.php` |
+| Central models | `app/Models/{Tenant,Plan,SuperAdmin,SuperAdminPasskey}.php` |
 | Tenant models | `app/Models/{User,Setting,MediaFile,MediaFolder}.php` |
 | Super-admin controllers | `app/Http/Controllers/Superadmin/*` |
+| Super-admin account settings | `app/Http/Controllers/Superadmin/Settings/*`, `resources/js/pages/superadmin/settings/*` |
+| Super-admin 2FA / passkeys | `app/Http/Controllers/Superadmin/{TwoFactor,TwoFactorChallenge,Passkey,PasskeyLogin}*.php` |
 | Suspended-tenant guard | `app/Http/Middleware/EnsureTenantIsActive.php` |
 | Plan limits | `app/Support/TenantLimits.php` |
 | Shared Inertia props | `app/Http/Middleware/HandleInertiaRequests.php` |
