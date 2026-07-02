@@ -36,6 +36,7 @@ abstract class TestCase extends BaseTestCase
             'database/migrations/tenant/2026_06_16_052159_create_settings_table.php',
             'database/migrations/tenant/2026_06_16_052200_create_media_folders_table.php',
             'database/migrations/tenant/2026_06_16_052201_create_media_files_table.php',
+            'database/migrations/tenant/2026_07_02_000001_create_themes_table.php',
         ];
     }
 

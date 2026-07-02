@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Http\Responses\LoginResponse;
 use App\Models\Setting;
+use App\Models\Theme;
 use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
@@ -29,8 +30,8 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->configureDefaults();
 
-        // Branding for the blade <head>. Only resolve from the tenant `settings`
-        // table when tenancy is initialized; central requests use config defaults.
+        // Branding + active theme for the blade <head>. Only resolve from the
+        // tenant tables when tenancy is initialized; central requests use defaults.
         View::composer('app', function ($view): void {
             $view->with('branding', tenant() ? Setting::branding() : [
                 'app_name' => config('app.name'),
@@ -41,6 +42,8 @@ class AppServiceProvider extends ServiceProvider
                 'seo_description' => null,
                 'seo_keywords' => null,
             ]);
+
+            $view->with('theme', tenant() ? Theme::activePayload() : null);
         });
     }
 

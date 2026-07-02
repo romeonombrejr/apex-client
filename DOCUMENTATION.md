@@ -230,6 +230,43 @@ color is applied in `app.blade.php` (first paint) and live in `AppLayout`.
 Each tenant's branding is naturally isolated because `settings` and the `settings.branding`
 cache key live in the tenant's own database.
 
+### Theme editor (tweakcn-style)
+
+Tenant admins get a live theme editor at **Admin → Themes** (`admin/themes`, gated by
+`settings.manage`). It edits the full shadcn CSS variable set (all keys in
+`ThemeCss::KEYS`) for light **and** dark, plus radius and fonts, with instant preview;
+themes are saved per-tenant, one can be active, and there's reset-to-default, presets, and
+JSON import/export (tolerant of tweakcn exports).
+
+- **Data**: `themes` table (tenant DB) → `App\Models\Theme`. `light`/`dark` are complete
+  var maps; at most one `is_active`. `Theme::activePayload()` caches `{id, name, css,
+  fontLinks}` (flushed on save/delete, and explicitly by the controller on the bulk
+  activate/reset which bypass model events).
+- **Compilation**: `App\Support\ThemeCss::compile()` is the single source of truth for the
+  32-key whitelist and value sanitization. It builds the `:root {…}\n.dark {…}` block and
+  **re-validates every value at read time** (`VALUE_PATTERN`) so a tampered DB row can't
+  inject into the `<style>` tag. `fontLinks()` builds Bunny URLs for non-default families.
+- **Injection**: mirrors branding — `app.blade.php` emits `<style id="app-theme">` (and
+  Bunny font `<link>`s) after `@vite`; `HandleInertiaRequests`/the blade composer share the
+  same payload; `resources/js/lib/apply-theme.ts` (used by `AppLayout`) manages that one
+  `<style>` tag for live SPA updates. The active theme **supersedes** the legacy branding
+  `primary_color` (which remains as a fallback when no theme is active).
+- **Fonts**: served from **Bunny** (matching `vite.config.ts`), curated in
+  `config/theme-fonts.php`. `Instrument Sans` is the sentinel default (no override / no
+  extra link).
+- **Editor internals** (`resources/js/lib/theme.ts`, `resources/js/pages/admin/settings/
+  themes.tsx`, `resources/js/components/theme-editor/*`): live preview via a
+  `<style id="theme-editor-preview">` tag re-appended on every edit (so it wins the
+  cascade); swatches use a canvas-based `colorToHex` (`getComputedStyle` does not resolve
+  `oklch`); import normalizes native / tweakcn-registry / tweakcn-internal shapes and wraps
+  bare HSL triplets in `hsl(...)`.
+
+> **Keep in sync:** the default var maps exist in three places — `resources/css/app.css`
+> (source of truth), `resources/js/lib/theme.ts` (`DEFAULT_LIGHT`/`DEFAULT_DARK`), and
+> `database/factories/ThemeFactory.php`. The key list lives in `ThemeCss::KEYS`.
+
+> Contrast is the admin's responsibility (like tweakcn) — presets ship safe color pairs.
+
 ---
 
 ## 8. Backups (per-tenant)
@@ -339,9 +376,11 @@ non-colliding tenant tables.
 > shares the schema across tests, so a bare test would migrate the central-only schema and
 > break others depending on run order.
 
-Current coverage: **62 tests** — the converted tenant-side suite (auth, dashboard,
-profile, security), super-admin auth + tenant management, plan limits, and super-admin
-account security (profile, password, the full 2FA cycle, and the reachable passkey paths).
+Current coverage: **76 tests** — the converted tenant-side suite (auth, dashboard,
+profile, security), super-admin auth + tenant management, plan limits, super-admin account
+security (profile, password, the full 2FA cycle, and the reachable passkey paths), and the
+theme editor (permission gating, value sanitization, activation exclusivity, reset,
+active-payload compilation, and compile-time tamper filtering).
 
 ---
 
@@ -358,6 +397,9 @@ account security (profile, password, the full 2FA cycle, and the reachable passk
 | Super-admin 2FA / passkeys | `app/Http/Controllers/Superadmin/{TwoFactor,TwoFactorChallenge,Passkey,PasskeyLogin}*.php` |
 | Suspended-tenant guard | `app/Http/Middleware/EnsureTenantIsActive.php` |
 | Plan limits | `app/Support/TenantLimits.php` |
+| Theme editor | `app/Support/ThemeCss.php`, `app/Models/Theme.php`, `app/Http/Controllers/Admin/ThemeController.php` |
+| Theme editor (frontend) | `resources/js/lib/{theme,apply-theme}.ts`, `resources/js/pages/admin/settings/themes.tsx`, `resources/js/components/theme-editor/*` |
+| Theme fonts catalog | `config/theme-fonts.php` |
 | Shared Inertia props | `app/Http/Middleware/HandleInertiaRequests.php` |
 | Exception mapping (404 / super-admin redirect) | `bootstrap/app.php` |
 | Central seeders | `database/seeders/{DatabaseSeeder,PlanSeeder}.php` |

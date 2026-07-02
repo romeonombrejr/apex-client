@@ -47,12 +47,26 @@
 
         @fonts
 
+        {{-- Custom fonts for the active theme (served from Bunny, like @fonts) --}}
+        @if (! empty($theme['fontLinks']))
+            <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
+            @foreach ($theme['fontLinks'] as $fontLink)
+                <link rel="stylesheet" href="{{ $fontLink }}" data-app-theme-font>
+            @endforeach
+        @endif
+
         @viteReactRefresh
         @vite(['resources/css/app.css', 'resources/js/app.tsx', "resources/js/pages/{$page['component']}.tsx"])
 
-        {{-- Loaded after app.css so the saved brand color overrides the theme default --}}
-        @if (! empty($branding['primary_color']))
-            <style>
+        {{--
+            Loaded after app.css so it overrides the theme defaults. The active
+            theme's compiled CSS supersedes the legacy branding primary_color;
+            values are sanitized in ThemeCss::compile(), so {!! !!} is safe here.
+        --}}
+        @if (! empty($theme['css']))
+            <style id="app-theme">{!! $theme['css'] !!}</style>
+        @elseif (! empty($branding['primary_color']))
+            <style id="app-theme">
                 :root, .dark {
                     --primary: {{ $branding['primary_color'] }};
                 }

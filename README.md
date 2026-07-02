@@ -19,6 +19,8 @@ provisions and manages every tenant.
   a tenant admin, and view cross-tenant usage.
 - **Per-tenant admin panel** — role & permission management, users, media library,
   activity log, backups, and branding/SEO settings.
+- **Live theme editor** — a tweakcn-style editor (colors, radius, fonts, light & dark) with
+  instant preview, saved themes, presets, and JSON import/export — per tenant.
 - **Plans & limits** — assign plans with enforced limits (e.g. max users) per tenant.
 - **Auth** — Laravel Fortify with registration, password reset, email verification,
   two-factor, and passkeys (per tenant); a separate guard for super admins, who also get
@@ -119,7 +121,7 @@ php artisan tenants:backup              # back up every tenant
 php artisan tenants:run "some:command"  # run a command in each tenant context
 
 # Quality
-php artisan test                        # 62 tests
+php artisan test                        # 76 tests
 vendor/bin/pint                         # PHP formatting
 npm run types:check                     # TypeScript
 npm run build

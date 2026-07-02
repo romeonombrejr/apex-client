@@ -29,9 +29,10 @@ class SettingController extends Controller
     {
         $setting = Setting::current();
 
+        // primary_color is superseded by the theme editor; leave the column untouched
+        // so any legacy fallback value survives settings updates.
         $setting->fill([
             'app_name' => $request->app_name,
-            'primary_color' => $request->primary_color,
             'seo_title' => $request->seo_title,
             'seo_description' => $request->seo_description,
             'seo_keywords' => $request->seo_keywords,

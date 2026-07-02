@@ -8,6 +8,7 @@ use App\Http\Controllers\Admin\MediaFolderController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -31,6 +32,10 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     Route::middleware('permission:settings.manage')->group(function () {
         Route::get('settings', [SettingController::class, 'edit'])->name('settings.edit');
         Route::post('settings', [SettingController::class, 'update'])->name('settings.update');
+
+        Route::post('themes/reset', [ThemeController::class, 'reset'])->name('themes.reset');
+        Route::post('themes/{theme}/activate', [ThemeController::class, 'activate'])->name('themes.activate');
+        Route::resource('themes', ThemeController::class)->only(['index', 'store', 'update', 'destroy']);
     });
 
     Route::middleware('permission:backup.manage')->prefix('backup')->name('backup.')->group(function () {

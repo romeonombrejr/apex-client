@@ -79,20 +79,6 @@ export default function EditSetting({ setting }: PageProps) {
                         </div>
 
                         <div className="grid gap-2">
-                            <Label htmlFor="primary_color">Primary color</Label>
-                            <Input
-                                id="primary_color"
-                                name="primary_color"
-                                type="color"
-                                defaultValue={
-                                    setting.primary_color ?? '#0ea5e9'
-                                }
-                                className="h-10 w-20 p-1"
-                            />
-                            <InputError message={errors.primary_color} />
-                        </div>
-
-                        <div className="grid gap-2">
                             <Label htmlFor="seo_title">SEO title</Label>
                             <Input
                                 id="seo_title"

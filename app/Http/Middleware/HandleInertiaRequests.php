@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\Setting;
+use App\Models\Theme;
 use Illuminate\Http\Request;
 use Inertia\Middleware;
 
@@ -48,6 +49,7 @@ class HandleInertiaRequests extends Middleware
             ...parent::share($request),
             'name' => $branding['app_name'] ?? config('app.name'),
             'branding' => $branding,
+            'theme' => tenant() ? Theme::activePayload() : null,
             'auth' => [
                 'user' => $user,
                 'roles' => $user?->getRoleNames() ?? [],

@@ -6,6 +6,7 @@ import {
     FolderOpen,
     HardDrive,
     LayoutGrid,
+    Palette,
     ScrollText,
     Settings,
     Settings2,
@@ -35,6 +36,7 @@ import { index as filesIndex } from '@/routes/admin/files';
 import { index as permissionsIndex } from '@/routes/admin/permissions';
 import { index as rolesIndex } from '@/routes/admin/roles';
 import { edit as settingsEdit } from '@/routes/admin/settings';
+import { index as themesIndex } from '@/routes/admin/themes';
 import { index as usersIndex } from '@/routes/admin/users';
 import type { NavGroupItem, NavItem } from '@/types';
 
@@ -56,6 +58,7 @@ const adminGroups: GroupDef[] = [
         icon: Settings,
         children: [
             { title: 'App Settings', href: settingsEdit(), icon: Settings2, permission: 'settings.manage' },
+            { title: 'Themes', href: themesIndex(), icon: Palette, permission: 'settings.manage' },
             { title: 'Backup', href: backupIndex(), icon: HardDrive, permission: 'backup.manage' },
         ],
     },
