@@ -5,7 +5,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
 
 #[Fillable(['app_name', 'logo_path', 'favicon_path', 'primary_color', 'seo_title', 'seo_description', 'seo_keywords'])]
 class Setting extends Model
@@ -32,8 +31,13 @@ class Setting extends Model
 
             return [
                 'app_name' => $setting->app_name,
-                'logo_path' => $setting->logo_path ? Storage::disk('public')->url($setting->logo_path) : null,
-                'favicon_path' => $setting->favicon_path ? Storage::disk('public')->url($setting->favicon_path) : null,
+                // Uploaded files live in the tenant's own (suffixed) public disk, which
+                // isn't reachable via the central /storage symlink. Serve them through
+                // stancl's tenant asset route. A relative URL is used deliberately: this
+                // value is cached, so it must not bake in a host (it resolves against
+                // whichever tenant domain the page is loaded on).
+                'logo_path' => $setting->logo_path ? route('stancl.tenancy.asset', ['path' => $setting->logo_path], false) : null,
+                'favicon_path' => $setting->favicon_path ? route('stancl.tenancy.asset', ['path' => $setting->favicon_path], false) : null,
                 'primary_color' => $setting->primary_color,
                 'seo_title' => $setting->seo_title,
                 'seo_description' => $setting->seo_description,

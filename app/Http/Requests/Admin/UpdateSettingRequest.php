@@ -24,8 +24,10 @@ class UpdateSettingRequest extends FormRequest
     {
         return [
             'app_name' => ['required', 'string', 'max:255'],
-            'logo' => ['nullable', 'image', 'max:2048'],
-            'favicon' => ['nullable', 'image', 'max:1024'],
+            // allow_svg: the base `image` rule rejects SVG; logos are commonly SVG and
+            // are safe when rendered via <img> (embedded scripts don't execute there).
+            'logo' => ['nullable', 'image:allow_svg', 'max:2048'],
+            'favicon' => ['nullable', 'image:allow_svg', 'max:1024'],
             'seo_title' => ['nullable', 'string', 'max:255'],
             'seo_description' => ['nullable', 'string', 'max:1000'],
             'seo_keywords' => ['nullable', 'string', 'max:255'],
