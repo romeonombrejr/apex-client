@@ -4,36 +4,52 @@ import {
     AreaChart,
     Bar,
     BarChart,
-    Legend,
+    CartesianGrid,
     Line,
     LineChart,
     Pie,
     PieChart,
     RadialBar,
     RadialBarChart,
-    ResponsiveContainer,
-    Tooltip,
     XAxis,
     YAxis,
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    type ChartConfig,
+    ChartContainer,
+    ChartLegend,
+    ChartLegendContent,
+    ChartTooltip,
+    ChartTooltipContent,
+} from '@/components/ui/chart';
 
-type MonthlyEntry   = { name: string; Users: number; Backups: number };
-type RoleEntry      = { name: string; value: number };
-type AreaEntry      = { month: string; users: number; backups: number };
-type RadialEntry    = { name: string; value: number; fill: string };
+type MonthlyEntry = { name: string; Users: number; Backups: number };
+type RoleEntry = { name: string; value: number };
+type AreaEntry = { month: string; users: number; backups: number };
+type RadialEntry = { name: string; value: number; fill: string };
 
 type PageProps = {
-    totalUsers:         number;
-    totalBackups:       number;
-    totalActivityLogs:  number;
-    monthlyData:        MonthlyEntry[];
-    roleDistribution:   RoleEntry[];
-    areaData:           AreaEntry[];
+    totalUsers: number;
+    totalBackups: number;
+    totalActivityLogs: number;
+    monthlyData: MonthlyEntry[];
+    roleDistribution: RoleEntry[];
+    areaData: AreaEntry[];
     performanceMetrics: RadialEntry[];
 };
 
-const ROLE_COLORS = ['#fbbf24', '#a78bfa', '#38bdf8', '#4ade80', '#f87171'];
+const chartColor = (i: number) => `var(--chart-${(i % 5) + 1})`;
+
+const monthlyConfig = {
+    Users: { label: 'Users', color: 'var(--chart-1)' },
+    Backups: { label: 'Backups', color: 'var(--chart-2)' },
+} satisfies ChartConfig;
+
+const areaConfig = {
+    users: { label: 'Users', color: 'var(--chart-1)' },
+    backups: { label: 'Activities', color: 'var(--chart-2)' },
+} satisfies ChartConfig;
 
 export default function AdminDashboard({
     totalUsers,
@@ -45,26 +61,50 @@ export default function AdminDashboard({
     performanceMetrics,
 }: PageProps) {
     const summaryCards = [
-        { label: 'Users',         value: totalUsers },
-        { label: 'Backups',       value: totalBackups },
+        { label: 'Users', value: totalUsers },
+        { label: 'Backups', value: totalBackups },
         { label: 'Activity Logs', value: totalActivityLogs },
     ];
+
+    // Colors for the dynamic pie/radial series come from the theme's chart vars.
+    const roleConfig: ChartConfig = Object.fromEntries(
+        roleDistribution.map((entry, i) => [
+            entry.name,
+            { label: entry.name, color: chartColor(i) },
+        ]),
+    );
+
+    const radialConfig: ChartConfig = Object.fromEntries(
+        performanceMetrics.map((entry, i) => [
+            entry.name,
+            { label: entry.name, color: chartColor(i) },
+        ]),
+    );
+
+    // Per-slice colors from theme chart vars (Recharts reads `fill` off each datum).
+    const roleData = roleDistribution.map((entry, i) => ({
+        ...entry,
+        fill: chartColor(i),
+    }));
+    const radialData = performanceMetrics.map((entry, i) => ({
+        ...entry,
+        fill: chartColor(i),
+    }));
 
     return (
         <>
             <Head title="Dashboard" />
             <div className="flex flex-col gap-6 p-4">
-
                 {/* Summary cards */}
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                     {summaryCards.map((item) => (
-                        <Card key={item.label} className="overflow-hidden rounded-lg bg-white shadow-md dark:bg-gray-800">
-                            <CardHeader className="px-4 py-3">
-                                <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white">
+                        <Card key={item.label}>
+                            <CardHeader>
+                                <CardTitle className="text-lg font-semibold">
                                     {item.label}
                                 </CardTitle>
                             </CardHeader>
-                            <CardContent className="px-4 py-2 text-3xl font-bold text-gray-900 dark:text-gray-100">
+                            <CardContent className="text-3xl font-bold">
                                 {item.value.toLocaleString()}
                             </CardContent>
                         </Card>
@@ -72,126 +112,204 @@ export default function AdminDashboard({
                 </div>
 
                 <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-
                     {/* Monthly Activity — bar chart */}
-                    <Card className="overflow-hidden rounded-lg bg-white shadow-md dark:bg-gray-800">
-                        <CardHeader className="px-4 py-3">
-                            <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg font-semibold">
                                 Monthly Activity
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                    <XAxis dataKey="name" stroke="#6b7280" />
-                                    <YAxis stroke="#6b7280" />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Bar dataKey="Users"   fill="#3b82f6" radius={[4, 4, 0, 0]} />
-                                    <Bar dataKey="Backups" fill="#8b5cf6" radius={[4, 4, 0, 0]} />
+                        <CardContent>
+                            <ChartContainer
+                                config={monthlyConfig}
+                                className="aspect-auto h-[300px] w-full"
+                            >
+                                <BarChart data={monthlyData}>
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis
+                                        dataKey="name"
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <YAxis tickLine={false} axisLine={false} />
+                                    <ChartTooltip
+                                        content={<ChartTooltipContent />}
+                                    />
+                                    <ChartLegend
+                                        content={<ChartLegendContent />}
+                                    />
+                                    <Bar
+                                        dataKey="Users"
+                                        fill="var(--color-Users)"
+                                        radius={[4, 4, 0, 0]}
+                                    />
+                                    <Bar
+                                        dataKey="Backups"
+                                        fill="var(--color-Backups)"
+                                        radius={[4, 4, 0, 0]}
+                                    />
                                 </BarChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                         </CardContent>
                     </Card>
 
                     {/* Monthly Trends — line chart */}
-                    <Card className="overflow-hidden rounded-lg bg-white shadow-md dark:bg-gray-800">
-                        <CardHeader className="px-4 py-3">
-                            <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg font-semibold">
                                 Monthly Trends
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <LineChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-                                    <XAxis dataKey="name" stroke="#6b7280" />
-                                    <YAxis stroke="#6b7280" />
-                                    <Tooltip />
-                                    <Legend />
-                                    <Line type="monotone" dataKey="Users"   stroke="#22c55e" strokeWidth={2} />
-                                    <Line type="monotone" dataKey="Backups" stroke="#f43f5e" strokeWidth={2} />
+                        <CardContent>
+                            <ChartContainer
+                                config={monthlyConfig}
+                                className="aspect-auto h-[300px] w-full"
+                            >
+                                <LineChart data={monthlyData}>
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis
+                                        dataKey="name"
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <YAxis tickLine={false} axisLine={false} />
+                                    <ChartTooltip
+                                        content={<ChartTooltipContent />}
+                                    />
+                                    <ChartLegend
+                                        content={<ChartLegendContent />}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="Users"
+                                        stroke="var(--color-Users)"
+                                        strokeWidth={2}
+                                        dot={false}
+                                    />
+                                    <Line
+                                        type="monotone"
+                                        dataKey="Backups"
+                                        stroke="var(--color-Backups)"
+                                        strokeWidth={2}
+                                        dot={false}
+                                    />
                                 </LineChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                         </CardContent>
                     </Card>
 
                     {/* User Roles — pie chart */}
-                    <Card className="overflow-hidden rounded-lg bg-white shadow-md dark:bg-gray-800">
-                        <CardHeader className="px-4 py-3">
-                            <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg font-semibold">
                                 User Roles
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="flex h-[300px] items-center justify-center">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <CardContent>
+                            <ChartContainer
+                                config={roleConfig}
+                                className="aspect-auto h-[300px] w-full"
+                            >
                                 <PieChart>
+                                    <ChartTooltip
+                                        content={
+                                            <ChartTooltipContent nameKey="name" />
+                                        }
+                                    />
                                     <Pie
-                                        data={roleDistribution.map((entry, i) => ({
-                                            ...entry,
-                                            fill: ROLE_COLORS[i % ROLE_COLORS.length],
-                                        }))}
+                                        data={roleData}
                                         dataKey="value"
                                         nameKey="name"
                                         cx="50%"
                                         cy="50%"
-                                        outerRadius={80}
-                                        label
+                                        outerRadius={90}
                                     />
-                                    <Tooltip />
-                                    <Legend />
+                                    <ChartLegend
+                                        content={
+                                            <ChartLegendContent nameKey="name" />
+                                        }
+                                    />
                                 </PieChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                         </CardContent>
                     </Card>
 
                     {/* Resource Usage — area chart */}
-                    <Card className="overflow-hidden rounded-lg bg-white shadow-md dark:bg-gray-800">
-                        <CardHeader className="px-4 py-3">
-                            <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white">
+                    <Card>
+                        <CardHeader>
+                            <CardTitle className="text-lg font-semibold">
                                 Resource Usage
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
-                                <AreaChart data={areaData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                                    <XAxis dataKey="month" stroke="#6b7280" />
-                                    <YAxis stroke="#6b7280" />
-                                    <Tooltip />
-                                    <Area type="monotone" dataKey="users"   name="Users"      stroke="#8884d8" fill="#c6dae7" />
-                                    <Area type="monotone" dataKey="backups" name="Activities" stroke="#82ca9d" fill="#b7e4c7" />
+                        <CardContent>
+                            <ChartContainer
+                                config={areaConfig}
+                                className="aspect-auto h-[300px] w-full"
+                            >
+                                <AreaChart data={areaData}>
+                                    <CartesianGrid vertical={false} />
+                                    <XAxis
+                                        dataKey="month"
+                                        tickLine={false}
+                                        axisLine={false}
+                                    />
+                                    <YAxis tickLine={false} axisLine={false} />
+                                    <ChartTooltip
+                                        content={<ChartTooltipContent />}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="users"
+                                        stroke="var(--color-users)"
+                                        fill="var(--color-users)"
+                                        fillOpacity={0.2}
+                                    />
+                                    <Area
+                                        type="monotone"
+                                        dataKey="backups"
+                                        stroke="var(--color-backups)"
+                                        fill="var(--color-backups)"
+                                        fillOpacity={0.2}
+                                    />
                                 </AreaChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                         </CardContent>
                     </Card>
 
                     {/* Performance Metrics — radial bar */}
-                    <Card className="overflow-hidden rounded-lg bg-white shadow-md dark:bg-gray-800 md:col-span-2">
-                        <CardHeader className="px-4 py-3">
-                            <CardTitle className="text-lg font-semibold text-gray-800 dark:text-white">
+                    <Card className="md:col-span-2">
+                        <CardHeader>
+                            <CardTitle className="text-lg font-semibold">
                                 Performance Metrics
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="h-[300px]">
-                            <ResponsiveContainer width="100%" height="100%">
+                        <CardContent>
+                            <ChartContainer
+                                config={radialConfig}
+                                className="aspect-auto h-[300px] w-full"
+                            >
                                 <RadialBarChart
                                     innerRadius="30%"
                                     outerRadius="80%"
-                                    data={performanceMetrics}
+                                    data={radialData}
                                     startAngle={180}
                                     endAngle={0}
                                 >
-                                    <RadialBar
-                                        dataKey="value"
-                                        cornerRadius={10}
-                                        label={{ fill: '#fff', position: 'insideStart' }}
+                                    <ChartTooltip
+                                        content={
+                                            <ChartTooltipContent nameKey="name" />
+                                        }
                                     />
-                                    <Legend iconSize={10} layout="horizontal" verticalAlign="bottom" align="center" />
-                                    <Tooltip formatter={(v) => `${v}%`} />
+                                    <RadialBar dataKey="value" cornerRadius={10} />
+                                    <ChartLegend
+                                        content={
+                                            <ChartLegendContent nameKey="name" />
+                                        }
+                                    />
                                 </RadialBarChart>
-                            </ResponsiveContainer>
+                            </ChartContainer>
                         </CardContent>
                     </Card>
-
                 </div>
             </div>
         </>
