@@ -56,6 +56,7 @@ class HandleInertiaRequests extends Middleware
                 'permissions' => $user?->getAllPermissions()->pluck('name') ?? [],
             ],
             'superAdmin' => $request->user('superadmin'),
+            'suites' => tenant() ? tenant()->activeSuites() : [],
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];
     }

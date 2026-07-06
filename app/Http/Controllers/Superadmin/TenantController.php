@@ -70,12 +70,14 @@ class TenantController extends Controller
                 'name' => $tenant->name,
                 'status' => $tenant->status,
                 'plan_id' => $tenant->plan_id,
+                'enabled_suites' => $tenant->enabledSuites(),
                 'domains' => $tenant->domains->map(fn (Domain $d) => [
                     'id' => $d->id,
                     'domain' => $d->domain,
                 ]),
             ],
             'plans' => $this->planOptions(),
+            'availableSuites' => $this->availableSuites(),
         ]);
     }
 
@@ -84,6 +86,7 @@ class TenantController extends Controller
         $tenant->update([
             'name' => $request->name,
             'plan_id' => $request->plan_id,
+            'enabled_suites' => array_values((array) $request->input('enabled_suites', [])),
         ]);
 
         activity()
@@ -148,6 +151,24 @@ class TenantController extends Controller
                 'id' => $plan->id,
                 'name' => $plan->name,
                 'max_users' => $plan->max_users,
+                'suites' => $plan->allowedSuites(),
             ]);
+    }
+
+    /**
+     * The registered suites, keyed for the enablement UI labels.
+     *
+     * @return array<int, array<string, mixed>>
+     */
+    protected function availableSuites(): array
+    {
+        return collect(config('suites', []))
+            ->map(fn (array $suite, string $slug) => [
+                'slug' => $slug,
+                'name' => $suite['name'],
+                'description' => $suite['description'] ?? null,
+            ])
+            ->values()
+            ->all();
     }
 }

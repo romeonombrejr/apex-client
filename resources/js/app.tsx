@@ -27,6 +27,8 @@ createInertiaApp({
                 return [AppLayout, SettingsLayout];
             case name.startsWith('admin/'):
                 return [AppLayout, AdminLayout];
+            case name.startsWith('storefront/'):
+                return [AppLayout, AdminLayout];
             default:
                 return AppLayout;
         }

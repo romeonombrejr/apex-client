@@ -21,6 +21,7 @@ class PermissionSeeder extends Seeder
             'backup.manage' => 'backup',
             'files.manage' => 'files',
             'audit-logs.view' => 'audit-logs',
+            'storefront.view' => 'storefront',
         ];
 
         foreach ($permissions as $name => $group) {

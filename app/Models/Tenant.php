@@ -34,4 +34,35 @@ class Tenant extends BaseTenant implements TenantWithDatabase
     {
         return $this->status === 'suspended';
     }
+
+    /**
+     * Suite slugs the super admin has switched on for this tenant (enablement).
+     * Stored transparently in the tenancy `data` JSON (not a custom column).
+     *
+     * @return array<int, string>
+     */
+    public function enabledSuites(): array
+    {
+        return (array) ($this->enabled_suites ?? []);
+    }
+
+    /**
+     * Suites the tenant effectively runs: registered ∩ plan-entitled ∩ enabled.
+     * The intersection means a plan downgrade auto-locks a suite without ever
+     * discarding the stored enablement.
+     *
+     * @return array<int, string>
+     */
+    public function activeSuites(): array
+    {
+        $registered = array_keys(config('suites', []));
+        $entitled = $this->plan?->allowedSuites() ?? [];
+
+        return array_values(array_intersect($this->enabledSuites(), $entitled, $registered));
+    }
+
+    public function hasSuite(string $slug): bool
+    {
+        return in_array($slug, $this->activeSuites(), true);
+    }
 }

@@ -24,6 +24,7 @@ declare module '@inertiajs/core' {
             auth: Auth;
             roles: string[];
             superAdmin: SuperAdmin | null;
+            suites: string[];
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

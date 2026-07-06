@@ -31,4 +31,15 @@ class Plan extends Model
     {
         return $this->hasMany(Tenant::class);
     }
+
+    /**
+     * Suite slugs this plan unlocks (entitlement). Stored inside the
+     * `features` JSON so no schema change is needed.
+     *
+     * @return array<int, string>
+     */
+    public function allowedSuites(): array
+    {
+        return $this->features['suites'] ?? [];
+    }
 }

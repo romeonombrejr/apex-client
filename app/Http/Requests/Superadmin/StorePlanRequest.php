@@ -26,6 +26,8 @@ class StorePlanRequest extends FormRequest
             'max_users' => ['nullable', 'integer', 'min:1'],
             'max_storage_mb' => ['nullable', 'integer', 'min:1'],
             'is_active' => ['boolean'],
+            'suites' => ['array'],
+            'suites.*' => ['string', Rule::in(array_keys(config('suites', [])))],
         ];
     }
 }

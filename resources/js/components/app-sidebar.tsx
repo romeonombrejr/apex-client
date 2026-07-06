@@ -11,6 +11,7 @@ import {
     Settings,
     Settings2,
     ShieldCheck,
+    Store,
     User,
     Users,
     Wrench,
@@ -38,36 +39,92 @@ import { index as rolesIndex } from '@/routes/admin/roles';
 import { edit as settingsEdit } from '@/routes/admin/settings';
 import { index as themesIndex } from '@/routes/admin/themes';
 import { index as usersIndex } from '@/routes/admin/users';
+import { index as storefrontIndex } from '@/routes/storefront';
 import type { NavGroupItem, NavItem } from '@/types';
 
 type ChildDef = NavItem & { permission: string };
 type GroupDef = Omit<NavGroupItem, 'children'> & { children: ChildDef[] };
+
+// Optional feature suites. Surfaced only when the tenant has the suite active
+// (shared `suites` prop) AND the user holds its permission — mirroring the
+// permission filter used for the admin groups below.
+type SuiteDef = NavItem & { suite: string; permission: string };
+
+const suiteItems: SuiteDef[] = [
+    {
+        title: 'Storefront',
+        href: storefrontIndex(),
+        icon: Store,
+        suite: 'storefront',
+        permission: 'storefront.view',
+    },
+];
 
 const adminGroups: GroupDef[] = [
     {
         title: 'Access',
         icon: Users,
         children: [
-            { title: 'Permissions', href: permissionsIndex(), icon: ShieldCheck, permission: 'permissions.manage' },
-            { title: 'Users', href: usersIndex(), icon: User, permission: 'users.manage' },
-            { title: 'Roles', href: rolesIndex(), icon: Crown, permission: 'roles.manage' },
+            {
+                title: 'Permissions',
+                href: permissionsIndex(),
+                icon: ShieldCheck,
+                permission: 'permissions.manage',
+            },
+            {
+                title: 'Users',
+                href: usersIndex(),
+                icon: User,
+                permission: 'users.manage',
+            },
+            {
+                title: 'Roles',
+                href: rolesIndex(),
+                icon: Crown,
+                permission: 'roles.manage',
+            },
         ],
     },
     {
         title: 'Settings',
         icon: Settings,
         children: [
-            { title: 'App Settings', href: settingsEdit(), icon: Settings2, permission: 'settings.manage' },
-            { title: 'Themes', href: themesIndex(), icon: Palette, permission: 'settings.manage' },
-            { title: 'Backup', href: backupIndex(), icon: HardDrive, permission: 'backup.manage' },
+            {
+                title: 'App Settings',
+                href: settingsEdit(),
+                icon: Settings2,
+                permission: 'settings.manage',
+            },
+            {
+                title: 'Themes',
+                href: themesIndex(),
+                icon: Palette,
+                permission: 'settings.manage',
+            },
+            {
+                title: 'Backup',
+                href: backupIndex(),
+                icon: HardDrive,
+                permission: 'backup.manage',
+            },
         ],
     },
     {
         title: 'Utilities',
         icon: Wrench,
         children: [
-            { title: 'Audit Logs', href: auditLogsIndex(), icon: ScrollText, permission: 'audit-logs.view' },
-            { title: 'File Manager', href: filesIndex(), icon: FolderOpen, permission: 'files.manage' },
+            {
+                title: 'Audit Logs',
+                href: auditLogsIndex(),
+                icon: ScrollText,
+                permission: 'audit-logs.view',
+            },
+            {
+                title: 'File Manager',
+                href: filesIndex(),
+                icon: FolderOpen,
+                permission: 'files.manage',
+            },
         ],
     },
 ];
@@ -86,8 +143,9 @@ const footerNavItems: NavItem[] = [
 ];
 
 export function AppSidebar() {
-    const { auth } = usePage().props;
+    const { auth, suites } = usePage().props;
     const permissions = (auth as { permissions?: string[] }).permissions ?? [];
+    const activeSuites = suites ?? [];
 
     const visibleGroups: NavGroupItem[] = adminGroups
         .map((group) => ({
@@ -98,10 +156,24 @@ export function AppSidebar() {
         }))
         .filter((group) => group.children.length > 0);
 
-    const dashboardHref = visibleGroups.length > 0 ? adminDashboard() : dashboard();
+    const visibleSuites: NavItem[] = suiteItems
+        .filter(
+            (item) =>
+                activeSuites.includes(item.suite) &&
+                permissions.includes(item.permission),
+        )
+        .map((item) => ({
+            title: item.title,
+            href: item.href,
+            icon: item.icon,
+        }));
+
+    const dashboardHref =
+        visibleGroups.length > 0 ? adminDashboard() : dashboard();
 
     const navItems: (NavItem | NavGroupItem)[] = [
         { title: 'Dashboard', href: dashboardHref, icon: LayoutGrid },
+        ...visibleSuites,
         ...visibleGroups,
     ];
 

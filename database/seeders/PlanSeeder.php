@@ -19,7 +19,7 @@ class PlanSeeder extends Seeder
                 'price' => 0,
                 'max_users' => 3,
                 'max_storage_mb' => 100,
-                'features' => ['backups' => false],
+                'features' => ['backups' => false, 'suites' => []],
             ],
             [
                 'name' => 'Pro',
@@ -27,7 +27,7 @@ class PlanSeeder extends Seeder
                 'price' => 29,
                 'max_users' => 25,
                 'max_storage_mb' => 5000,
-                'features' => ['backups' => true],
+                'features' => ['backups' => true, 'suites' => ['storefront']],
             ],
             [
                 'name' => 'Enterprise',
@@ -35,7 +35,7 @@ class PlanSeeder extends Seeder
                 'price' => 99,
                 'max_users' => null,
                 'max_storage_mb' => null,
-                'features' => ['backups' => true],
+                'features' => ['backups' => true, 'suites' => ['storefront']],
             ],
         ];
 

@@ -1,6 +1,6 @@
 import { Head, router, useForm } from '@inertiajs/react';
 import { Trash2 } from 'lucide-react';
-import { FormEvent } from 'react';
+import type { FormEvent } from 'react';
 import InputError from '@/components/input-error';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,12 @@ import {
     TableRow,
 } from '@/components/ui/table';
 
+type SuiteOption = {
+    slug: string;
+    name: string;
+    description: string | null;
+};
+
 type PlanRow = {
     id: number;
     name: string;
@@ -24,11 +30,13 @@ type PlanRow = {
     max_users: number | null;
     max_storage_mb: number | null;
     is_active: boolean;
+    suites: string[];
     tenants_count: number;
 };
 
 type PageProps = {
     plans: PlanRow[];
+    availableSuites: SuiteOption[];
 };
 
 type PlanForm = {
@@ -39,6 +47,7 @@ type PlanForm = {
     max_users: string;
     max_storage_mb: string;
     is_active: boolean;
+    suites: string[];
 };
 
 const blank: PlanForm = {
@@ -49,10 +58,20 @@ const blank: PlanForm = {
     max_users: '',
     max_storage_mb: '',
     is_active: true,
+    suites: [],
 };
 
-export default function PlansIndex({ plans }: PageProps) {
+export default function PlansIndex({ plans, availableSuites }: PageProps) {
     const form = useForm<PlanForm>({ ...blank });
+
+    function toggleSuite(slug: string, checked: boolean) {
+        form.setData(
+            'suites',
+            checked
+                ? [...form.data.suites, slug]
+                : form.data.suites.filter((s) => s !== slug),
+        );
+    }
 
     function submit(e: FormEvent) {
         e.preventDefault();
@@ -78,17 +97,21 @@ export default function PlansIndex({ plans }: PageProps) {
             max_users: plan.max_users?.toString() ?? '',
             max_storage_mb: plan.max_storage_mb?.toString() ?? '',
             is_active: plan.is_active,
+            suites: plan.suites,
         });
     }
 
     function destroy(plan: PlanRow) {
         if (plan.tenants_count > 0) {
             alert('Cannot delete a plan that still has tenants.');
+
             return;
         }
+
         if (!confirm(`Delete the "${plan.name}" plan?`)) {
             return;
         }
+
         router.delete(`/superadmin/plans/${plan.id}`, { preserveScroll: true });
     }
 
@@ -235,6 +258,40 @@ export default function PlansIndex({ plans }: PageProps) {
                         />
                         <InputError message={form.errors.max_storage_mb} />
                     </div>
+
+                    {availableSuites.length > 0 && (
+                        <div className="grid gap-2">
+                            <Label>Suites</Label>
+                            <div className="space-y-2">
+                                {availableSuites.map((suite) => (
+                                    <div
+                                        key={suite.slug}
+                                        className="flex items-center space-x-3"
+                                    >
+                                        <Checkbox
+                                            id={`suite-${suite.slug}`}
+                                            checked={form.data.suites.includes(
+                                                suite.slug,
+                                            )}
+                                            onCheckedChange={(checked) =>
+                                                toggleSuite(
+                                                    suite.slug,
+                                                    checked === true,
+                                                )
+                                            }
+                                        />
+                                        <Label
+                                            htmlFor={`suite-${suite.slug}`}
+                                            className="font-normal"
+                                        >
+                                            {suite.name}
+                                        </Label>
+                                    </div>
+                                ))}
+                            </div>
+                            <InputError message={form.errors.suites} />
+                        </div>
+                    )}
 
                     <div className="flex items-center space-x-3">
                         <Checkbox
