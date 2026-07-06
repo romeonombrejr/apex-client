@@ -7,7 +7,11 @@
       "Read(//c/Users/User/docker-projects/**)",
       "Bash(ls \"C:/laragon/bin/mysql/\" 2>/dev/null || echo \"not found\")",
       "Read(//c/laragon/bin/mysql/**)",
-      "Bash(\"C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysqldump.exe\" --host=127.0.0.1 --port=3306 --user=root --no-data hello-client)"
+      "Bash(\"C:/laragon/bin/mysql/mysql-8.4.3-winx64/bin/mysqldump.exe\" --host=127.0.0.1 --port=3306 --user=root --no-data apex-client)",
+      "PowerShell(Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -in 80,8000,5173,3000 } | Select-Object LocalAddress,LocalPort,OwningProcess | Sort-Object LocalPort)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:8000\" -UseBasicParsing -TimeoutSec 10; \"STATUS: $\\($r.StatusCode\\)\" } catch { \"ERR: $\\($_.Exception.Message\\)\" })",
+      "PowerShell(php artisan config:clear)",
+      "PowerShell(php artisan key:generate)"
     ]
   }
 }

@@ -1,4 +1,4 @@
-# HelloClient
+# ApexClient
 
 A **multi-tenant SaaS** built on Laravel 13 + Inertia/React (TypeScript). Each customer
 (**tenant**) gets their own isolated database and admin panel; a central **super admin**

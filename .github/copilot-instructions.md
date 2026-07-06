@@ -1,4 +1,4 @@
-# HelloClient — Project Context
+# ApexClient — Project Context
 
 ## Stack
 - Laravel 13, Fortify (auth + 2FA + passkeys), Inertia + React + TypeScript
