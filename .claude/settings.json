@@ -29,7 +29,14 @@
       "Bash(cat \"/c/Users/User/AppData/Local/Temp/claude/c--Users-User-docker-projects-apex-client/185942fc-8269-44ac-af16-793607450980/scratchpad/verify_suites.txt\" | php artisan tinker 2>&1)",
       "PowerShell(Get-NetTCPConnection -State Listen | Where-Object { $_.LocalPort -in 80,8000,5173,3000 } | Select-Object LocalAddress,LocalPort,OwningProcess | Sort-Object LocalPort | Format-Table -AutoSize)",
       "PowerShell(Start-Sleep -Seconds 2; try { $r = Invoke-WebRequest -Uri \"http://localhost:8000/superadmin\" -UseBasicParsing -MaximumRedirection 0 -TimeoutSec 20 } catch { $r = $_.Exception.Response }; if \\($r\\) { \"HTTP $\\([int]$r.StatusCode\\)\" } else { \"no response\" })",
-      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:8000/superadmin/login\" -UseBasicParsing -TimeoutSec 20; \"HTTP $\\($r.StatusCode\\) — login page OK\" } catch { \"ERR: $\\($_.Exception.Message\\)\" })"
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:8000/superadmin/login\" -UseBasicParsing -TimeoutSec 20; \"HTTP $\\($r.StatusCode\\) — login page OK\" } catch { \"ERR: $\\($_.Exception.Message\\)\" })",
+      "PowerShell(node \"C:\\\\Program Files\\\\nodejs\\\\node_modules\\\\npm\\\\bin\\\\npx-cli.js\" shadcn@latest add radio-group tabs --yes 2>&1)",
+      "PowerShell(\"---- typecheck ----\")",
+      "PowerShell(php artisan migrate:fresh --seed 2>&1)",
+      "Bash(cat \"/c/Users/User/AppData/Local/Temp/claude/c--Users-User-docker-projects-apex-client/185942fc-8269-44ac-af16-793607450980/scratchpad/verify_storefront.txt\" | php artisan tinker 2>&1)",
+      "PowerShell(php artisan tenants:migrate 2>&1)",
+      "PowerShell(php artisan tenants:seed 2>&1)",
+      "Bash(cat \"/c/Users/User/AppData/Local/Temp/claude/c--Users-User-docker-projects-apex-client/185942fc-8269-44ac-af16-793607450980/scratchpad/verify_phase2.txt\" | php artisan tinker 2>&1)"
     ]
   }
 }

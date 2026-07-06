@@ -20,12 +20,20 @@ function isNavGroup(item: MainNavEntry): item is NavGroupItem {
     return 'children' in item && Array.isArray(item.children);
 }
 
-export function NavMain({ items = [] }: { items: MainNavEntry[] }) {
+export function NavMain({
+    items = [],
+    label = 'Platform',
+    className,
+}: {
+    items: MainNavEntry[];
+    label?: string | null;
+    className?: string;
+}) {
     const { isCurrentUrl, isCurrentOrParentUrl } = useCurrentUrl();
 
     return (
-        <SidebarGroup className="px-2 py-0">
-            <SidebarGroupLabel>Platform</SidebarGroupLabel>
+        <SidebarGroup className={`px-2 py-0 ${className ?? ''}`}>
+            {label && <SidebarGroupLabel>{label}</SidebarGroupLabel>}
             <SidebarMenu>
                 {items.map((item) =>
                     isNavGroup(item) ? (

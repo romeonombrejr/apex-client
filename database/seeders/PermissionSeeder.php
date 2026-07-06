@@ -22,6 +22,7 @@ class PermissionSeeder extends Seeder
             'files.manage' => 'files',
             'audit-logs.view' => 'audit-logs',
             'storefront.view' => 'storefront',
+            'storefront.manage' => 'storefront',
         ];
 
         foreach ($permissions as $name => $group) {
@@ -32,5 +33,8 @@ class PermissionSeeder extends Seeder
         // authenticated on a different guard (e.g. the super admin), which would
         // otherwise make spatie resolve the wrong default guard here.
         Role::findByName('admin', 'web')->givePermissionTo(array_keys($permissions));
+
+        // Clients can shop the storefront (browse catalog + cart) but not manage it.
+        Role::findByName('client', 'web')->givePermissionTo('storefront.view');
     }
 }

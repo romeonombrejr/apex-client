@@ -8,6 +8,12 @@ use App\Http\Controllers\Admin\MediaFolderController;
 use App\Http\Controllers\Admin\PermissionController;
 use App\Http\Controllers\Admin\RoleController;
 use App\Http\Controllers\Admin\SettingController;
+use App\Http\Controllers\Admin\Storefront\CreditController;
+use App\Http\Controllers\Admin\Storefront\FormController;
+use App\Http\Controllers\Admin\Storefront\InvoiceController;
+use App\Http\Controllers\Admin\Storefront\OrderController;
+use App\Http\Controllers\Admin\Storefront\OrderStatusController;
+use App\Http\Controllers\Admin\Storefront\ServiceController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\UserController;
 use Illuminate\Support\Facades\Route;
@@ -56,4 +62,24 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     });
 
     Route::middleware('permission:audit-logs.view')->get('audit-logs', [AuditLogController::class, 'index'])->name('audit-logs.index');
+
+    // Storefront suite management (gated by the suite being active for the tenant).
+    Route::middleware(['suite:storefront', 'permission:storefront.manage'])
+        ->prefix('storefront')->name('storefront.')->group(function () {
+            Route::resource('forms', FormController::class)->except(['show']);
+            Route::resource('services', ServiceController::class)->except(['show']);
+            Route::resource('statuses', OrderStatusController::class)->only(['index', 'store', 'update', 'destroy']);
+
+            Route::get('credits', [CreditController::class, 'index'])->name('credits.index');
+            Route::post('credits', [CreditController::class, 'store'])->name('credits.store');
+            Route::get('credits/{user}', [CreditController::class, 'show'])->name('credits.show');
+
+            Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
+            Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+            Route::put('orders/{order}', [OrderController::class, 'update'])->name('orders.update');
+
+            Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
+            Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');
+            Route::post('invoices/{invoice}/refund', [InvoiceController::class, 'refund'])->name('invoices.refund');
+        });
 });
