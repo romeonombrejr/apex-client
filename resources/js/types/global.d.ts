@@ -1,6 +1,6 @@
-import type { Auth } from '@/types/auth';
-import type { SettingFormData } from '@/types';
 import type { ThemePayload } from '@/lib/apply-theme';
+import type { NotificationItem, SettingFormData } from '@/types';
+import type { Auth } from '@/types/auth';
 
 declare module 'react' {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -25,6 +25,7 @@ declare module '@inertiajs/core' {
             roles: string[];
             superAdmin: SuperAdmin | null;
             suites: string[];
+            notifications: { unread: number; items: NotificationItem[] };
             sidebarOpen: boolean;
             [key: string]: unknown;
         };

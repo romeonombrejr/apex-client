@@ -1,5 +1,5 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { Copy, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
     Table,
@@ -9,7 +9,12 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { create, destroy, edit } from '@/routes/admin/storefront/forms';
+import {
+    create,
+    destroy,
+    duplicate,
+    edit,
+} from '@/routes/admin/storefront/forms';
 import type { FormRow } from '@/types';
 
 export default function FormsIndex({ forms }: { forms: FormRow[] }) {
@@ -19,6 +24,10 @@ export default function FormsIndex({ forms }: { forms: FormRow[] }) {
         }
 
         router.delete(destroy({ form: form.id }).url, { preserveScroll: true });
+    }
+
+    function copy(form: FormRow) {
+        router.post(duplicate({ form: form.id }).url);
     }
 
     return (
@@ -71,6 +80,14 @@ export default function FormsIndex({ forms }: { forms: FormRow[] }) {
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex justify-end gap-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            title="Duplicate"
+                                            onClick={() => copy(form)}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
                                         <Button
                                             variant="ghost"
                                             size="icon"

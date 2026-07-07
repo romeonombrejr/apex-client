@@ -22,6 +22,8 @@ class UpdateCartItemRequest extends FormRequest
             'answers' => ['nullable', 'array'],
             'files' => ['nullable', 'array'],
             'files.*' => ['file', 'max:10240'],
+            'referenced_order_ids' => ['nullable', 'array'],
+            'referenced_order_ids.*' => ['integer'],
         ];
     }
 }

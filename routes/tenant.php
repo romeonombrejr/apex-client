@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Route;
 use Stancl\Tenancy\Features\UserImpersonation;
 use Stancl\Tenancy\Middleware\InitializeTenancyByDomain;
@@ -37,6 +38,9 @@ Route::middleware([
 
     Route::middleware(['auth', 'verified'])->group(function () {
         Route::inertia('dashboard', 'dashboard')->name('dashboard');
+
+        Route::post('notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
+        Route::post('notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
     });
 
     require __DIR__.'/settings.php';

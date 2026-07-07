@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { appendAnswers } from '@/components/storefront/answers-form-data';
 import { DynamicForm } from '@/components/storefront/dynamic-form';
 import type { DynamicFormValues } from '@/components/storefront/dynamic-form';
+import { OrderReferencesPicker } from '@/components/storefront/order-references-picker';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -16,21 +17,24 @@ import {
 } from '@/components/ui/dialog';
 import { destroy, update } from '@/routes/storefront/cart';
 import { store as checkoutStore } from '@/routes/storefront/checkout';
-import type { CartItemRow } from '@/types';
+import type { CartItemRow, OrderRef } from '@/types';
 
 type PageProps = {
     items: CartItemRow[];
     creditBalance: number;
     selectedTotal: number;
+    myOrders: OrderRef[];
 };
 
 export default function Cart({
     items,
     creditBalance,
     selectedTotal,
+    myOrders,
 }: PageProps) {
     const [editing, setEditing] = useState<CartItemRow | null>(null);
     const [answers, setAnswers] = useState<DynamicFormValues>({});
+    const [references, setReferences] = useState<number[]>([]);
 
     const selectedCount = items.filter((i) => i.selected).length;
     const hasIncompleteSelected = items.some((i) => i.selected && !i.complete);
@@ -68,6 +72,7 @@ export default function Cart({
     function openEditor(item: CartItemRow) {
         setEditing(item);
         setAnswers({ ...item.answers });
+        setReferences([...item.referenced_order_ids]);
     }
 
     function saveAnswers() {
@@ -78,6 +83,9 @@ export default function Cart({
         const fd = new FormData();
         fd.append('_method', 'patch');
         appendAnswers(fd, answers);
+        references.forEach((id) =>
+            fd.append('referenced_order_ids[]', String(id)),
+        );
 
         router.post(update({ cartItem: editing.id }).url, fd, {
             forceFormData: true,
@@ -178,7 +186,8 @@ export default function Cart({
                                             </Button>
                                         </div>
 
-                                        {item.service.form && (
+                                        {(item.service.form ||
+                                            myOrders.length > 0) && (
                                             <Button
                                                 variant="link"
                                                 size="sm"
@@ -250,7 +259,7 @@ export default function Cart({
                 onOpenChange={(o) => !o && setEditing(null)}
             >
                 <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-                    {editing?.service.form && (
+                    {editing && (
                         <>
                             <DialogHeader>
                                 <DialogTitle>
@@ -258,13 +267,24 @@ export default function Cart({
                                 </DialogTitle>
                             </DialogHeader>
 
-                            <DynamicForm
-                                fields={editing.service.form.fields}
-                                values={answers}
-                                onChange={(key, value) =>
-                                    setAnswers((a) => ({ ...a, [key]: value }))
-                                }
-                                idPrefix={`cart-${editing.id}`}
+                            {editing.service.form && (
+                                <DynamicForm
+                                    fields={editing.service.form.fields}
+                                    values={answers}
+                                    onChange={(key, value) =>
+                                        setAnswers((a) => ({
+                                            ...a,
+                                            [key]: value,
+                                        }))
+                                    }
+                                    idPrefix={`cart-${editing.id}`}
+                                />
+                            )}
+
+                            <OrderReferencesPicker
+                                orders={myOrders}
+                                selected={references}
+                                onChange={setReferences}
                             />
 
                             <DialogFooter>

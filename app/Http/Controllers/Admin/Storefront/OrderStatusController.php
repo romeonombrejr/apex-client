@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Admin\Storefront\SaveOrderStatusRequest;
 use App\Models\OrderStatus;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -53,6 +54,20 @@ class OrderStatusController extends Controller
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Status updated.')]);
 
         return to_route('admin.storefront.statuses.index');
+    }
+
+    public function reorder(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'ids' => ['required', 'array'],
+            'ids.*' => ['integer', 'exists:order_statuses,id'],
+        ]);
+
+        foreach ($validated['ids'] as $position => $id) {
+            OrderStatus::where('id', $id)->update(['position' => $position]);
+        }
+
+        return back();
     }
 
     public function destroy(OrderStatus $status): RedirectResponse

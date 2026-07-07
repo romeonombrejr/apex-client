@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'name', 'slug', 'description', 'type', 'billing_interval',
-    'price', 'form_id', 'image_path', 'image_disk', 'is_active', 'position',
+    'price', 'form_id', 'service_category_id', 'image_path', 'image_disk', 'is_active', 'position',
 ])]
 class Service extends Model
 {
@@ -30,6 +30,11 @@ class Service extends Model
     public function form(): BelongsTo
     {
         return $this->belongsTo(Form::class);
+    }
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(ServiceCategory::class, 'service_category_id');
     }
 
     public function cartItems(): HasMany
@@ -68,6 +73,10 @@ class Service extends Model
             'billing_interval' => $this->billing_interval,
             'price' => (float) $this->price,
             'image_url' => $this->imageUrl(),
+            'category' => $this->category ? [
+                'id' => $this->category->id,
+                'name' => $this->category->name,
+            ] : null,
             'form' => $this->form?->toDefinition(),
         ];
     }

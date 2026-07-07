@@ -1,6 +1,7 @@
 import { Head, Link, router } from '@inertiajs/react';
 import { useState } from 'react';
 import { AnswersDisplay } from '@/components/storefront/answers-display';
+import { OrderThread } from '@/components/storefront/order-thread';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import {
@@ -12,6 +13,7 @@ import {
 } from '@/components/ui/select';
 import { show as invoiceShow } from '@/routes/admin/storefront/invoices';
 import { index as ordersIndex, update } from '@/routes/admin/storefront/orders';
+import { store as postMessage } from '@/routes/admin/storefront/orders/messages';
 import type { OrderDetail, OrderStatusLite } from '@/types';
 
 type Assignee = { id: number; name: string };
@@ -68,6 +70,29 @@ export default function AdminOrderShow({
                         <AnswersDisplay
                             form={order.form}
                             answers={order.answers}
+                        />
+                    </div>
+
+                    {order.references.length > 0 && (
+                        <div className="rounded-lg border p-4">
+                            <h2 className="mb-3 font-semibold">
+                                Referenced orders
+                            </h2>
+                            <ul className="space-y-1 text-sm">
+                                {order.references.map((ref) => (
+                                    <li key={ref.id}>
+                                        {ref.number} — {ref.name}
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    )}
+
+                    <div className="rounded-lg border p-4">
+                        <h2 className="mb-3 font-semibold">Messages</h2>
+                        <OrderThread
+                            messages={order.messages}
+                            postUrl={postMessage({ order: order.id }).url}
                         />
                     </div>
 

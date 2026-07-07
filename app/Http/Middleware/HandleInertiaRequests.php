@@ -57,7 +57,33 @@ class HandleInertiaRequests extends Middleware
             ],
             'superAdmin' => $request->user('superadmin'),
             'suites' => tenant() ? tenant()->activeSuites() : [],
+            'notifications' => $this->notifications($user),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
+        ];
+    }
+
+    /**
+     * The current tenant user's unread count + recent in-app notifications.
+     * Null-safe: on central (super-admin) requests there is no web user.
+     *
+     * @return array{unread: int, items: array<int, array<string, mixed>>}
+     */
+    protected function notifications(?object $user): array
+    {
+        if (! $user || ! tenant()) {
+            return ['unread' => 0, 'items' => []];
+        }
+
+        return [
+            'unread' => $user->unreadNotifications()->count(),
+            'items' => $user->notifications()->latest()->take(10)->get()->map(fn ($n) => [
+                'id' => $n->id,
+                'title' => $n->data['title'] ?? '',
+                'message' => $n->data['message'] ?? '',
+                'url' => $n->data['url'] ?? null,
+                'read' => $n->read_at !== null,
+                'created_at' => $n->created_at?->diffForHumans(),
+            ])->all(),
         ];
     }
 

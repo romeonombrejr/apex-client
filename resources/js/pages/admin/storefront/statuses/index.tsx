@@ -1,5 +1,5 @@
 import { Head, router } from '@inertiajs/react';
-import { Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { StatusBadge } from '@/components/storefront/status-badge';
 import { Button } from '@/components/ui/button';
@@ -14,7 +14,12 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { destroy, store, update } from '@/routes/admin/storefront/statuses';
+import {
+    destroy,
+    reorder,
+    store,
+    update,
+} from '@/routes/admin/storefront/statuses';
 import type { OrderStatusRow } from '@/types';
 
 type StatusForm = {
@@ -39,6 +44,24 @@ export default function StatusesIndex({
     statuses: OrderStatusRow[];
 }) {
     const [form, setForm] = useState<StatusForm>({ ...blank });
+    const [ordered, setOrdered] = useState<OrderStatusRow[]>(statuses);
+
+    function move(index: number, direction: -1 | 1) {
+        const target = index + direction;
+
+        if (target < 0 || target >= ordered.length) {
+            return;
+        }
+
+        const next = [...ordered];
+        [next[index], next[target]] = [next[target], next[index]];
+        setOrdered(next);
+        router.post(
+            reorder().url,
+            { ids: next.map((s) => s.id) },
+            { preserveScroll: true, preserveState: true },
+        );
+    }
 
     function submit() {
         const opts = {
@@ -84,6 +107,7 @@ export default function StatusesIndex({
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead className="w-16" />
                             <TableHead>Status</TableHead>
                             <TableHead>Flags</TableHead>
                             <TableHead>Orders</TableHead>
@@ -91,7 +115,7 @@ export default function StatusesIndex({
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {statuses.map((status) => (
+                        {ordered.map((status, index) => (
                             <TableRow
                                 key={status.id}
                                 className="cursor-pointer"
@@ -105,6 +129,30 @@ export default function StatusesIndex({
                                     })
                                 }
                             >
+                                <TableCell onClick={(e) => e.stopPropagation()}>
+                                    <div className="flex flex-col">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-5 w-6"
+                                            disabled={index === 0}
+                                            onClick={() => move(index, -1)}
+                                        >
+                                            <ArrowUp className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-5 w-6"
+                                            disabled={
+                                                index === ordered.length - 1
+                                            }
+                                            onClick={() => move(index, 1)}
+                                        >
+                                            <ArrowDown className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                </TableCell>
                                 <TableCell>
                                     <StatusBadge
                                         status={{

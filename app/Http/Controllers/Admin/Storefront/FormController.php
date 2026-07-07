@@ -83,6 +83,26 @@ class FormController extends Controller
         return to_route('admin.storefront.forms.index');
     }
 
+    public function duplicate(Request $request, Form $form): RedirectResponse
+    {
+        $form->load('fields');
+
+        $copy = Form::create([
+            'name' => $form->name.' (copy)',
+            'description' => $form->description,
+        ]);
+
+        foreach ($form->fields as $field) {
+            $copy->fields()->create($field->only(['label', 'key', 'type', 'help', 'required', 'options', 'position']));
+        }
+
+        activity()->causedBy($request->user())->performedOn($copy)->log('Duplicated form.');
+
+        Inertia::flash('toast', ['type' => 'success', 'message' => __('Form duplicated.')]);
+
+        return to_route('admin.storefront.forms.edit', $copy->id);
+    }
+
     public function destroy(Request $request, Form $form): RedirectResponse
     {
         // Services keep existing (form_id is null-on-delete); they simply lose the form.
@@ -114,9 +134,23 @@ class FormController extends Controller
                 'type' => $field['type'],
                 'help' => $field['help'] ?? null,
                 'required' => (bool) ($field['required'] ?? false),
-                'options' => $isChoice ? array_values(array_filter($field['options'] ?? [])) : null,
+                'options' => $isChoice ? $this->cleanOptions($field['options'] ?? []) : null,
                 'position' => $position,
             ]);
         }
+    }
+
+    /**
+     * Trim option lines and drop blanks (raw newlines arrive from the builder).
+     *
+     * @param  array<int, string>  $options
+     * @return array<int, string>
+     */
+    protected function cleanOptions(array $options): array
+    {
+        return array_values(array_filter(
+            array_map('trim', $options),
+            fn (string $option) => $option !== '',
+        ));
     }
 }

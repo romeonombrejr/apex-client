@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\Storefront\StoreCartItemRequest;
 use App\Http\Requests\Storefront\UpdateCartItemRequest;
 use App\Models\CartItem;
+use App\Models\Order;
 use App\Models\Service;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Inertia\Inertia;
 use Inertia\Response;
 
@@ -25,6 +27,7 @@ class CartController extends Controller
                 'quantity' => $item->quantity,
                 'selected' => $item->selected,
                 'answers' => $item->form_answers ?? [],
+                'referenced_order_ids' => $item->referenced_order_ids ?? [],
                 'complete' => $item->isComplete(),
                 'line_total' => round((float) $item->price_snapshot * $item->quantity, 2),
                 'service' => $item->service->toCatalogArray(),
@@ -38,6 +41,7 @@ class CartController extends Controller
             'items' => $items,
             'creditBalance' => $request->user()->creditBalance(),
             'selectedTotal' => round($selectedTotal, 2),
+            'myOrders' => $this->orderOptions($request),
         ]);
     }
 
@@ -54,6 +58,7 @@ class CartController extends Controller
             'quantity' => $request->quantity,
             'selected' => true,
             'form_answers' => $this->mergeAnswers($request, []) ?: null,
+            'referenced_order_ids' => $this->ownReferences($request) ?: null,
             'price_snapshot' => $service->price,
         ]);
 
@@ -78,6 +83,10 @@ class CartController extends Controller
 
         if ($request->has('answers') || $request->hasFile('files')) {
             $data['form_answers'] = $this->mergeAnswers($request, $cartItem->form_answers ?? []) ?: null;
+        }
+
+        if ($request->has('referenced_order_ids')) {
+            $data['referenced_order_ids'] = $this->ownReferences($request) ?: null;
         }
 
         $cartItem->update($data);
@@ -113,5 +122,41 @@ class CartController extends Controller
         }
 
         return array_filter($answers, fn ($value) => $value !== null && $value !== '');
+    }
+
+    /**
+     * The submitted referenced order ids, restricted to the client's own orders.
+     *
+     * @return array<int, int>
+     */
+    protected function ownReferences(Request $request): array
+    {
+        $ids = (array) $request->input('referenced_order_ids', []);
+
+        if ($ids === []) {
+            return [];
+        }
+
+        return Order::where('user_id', $request->user()->id)
+            ->whereIn('id', $ids)
+            ->pluck('id')
+            ->all();
+    }
+
+    /**
+     * The client's existing orders, offered as reference options in the UI.
+     *
+     * @return Collection<int, array<string, mixed>>
+     */
+    protected function orderOptions(Request $request)
+    {
+        return Order::where('user_id', $request->user()->id)
+            ->latest()
+            ->get(['id', 'number', 'name'])
+            ->map(fn (Order $order) => [
+                'id' => $order->id,
+                'number' => $order->number,
+                'name' => $order->name,
+            ]);
     }
 }

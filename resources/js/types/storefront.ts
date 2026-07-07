@@ -26,6 +26,8 @@ export type FormDefinition = {
     fields: FormFieldDef[];
 };
 
+export type ServiceCategoryLite = { id: number; name: string };
+
 export type CatalogService = {
     id: number;
     name: string;
@@ -35,6 +37,7 @@ export type CatalogService = {
     billing_interval: BillingInterval | null;
     price: number;
     image_url: string | null;
+    category: ServiceCategoryLite | null;
     form: FormDefinition | null;
 };
 
@@ -47,6 +50,7 @@ export type CartItemRow = {
     quantity: number;
     selected: boolean;
     answers: FormAnswers;
+    referenced_order_ids: number[];
     complete: boolean;
     line_total: number;
     service: CatalogService;
@@ -68,8 +72,15 @@ export type ServiceRow = {
     billing_interval: BillingInterval | null;
     price: number;
     form: string | null;
+    category: string | null;
     is_active: boolean;
     image_url: string | null;
+};
+
+export type ServiceCategoryRow = {
+    id: number;
+    name: string;
+    services_count: number;
 };
 
 /** A field row while editing in the form builder (help is a string, never null). */
@@ -113,6 +124,18 @@ export type OrderRow = {
     created_at: string | null;
 };
 
+export type OrderMessage = {
+    id: number;
+    author_id: number;
+    author: string | null;
+    body: string;
+    attachment_url: string | null;
+    attachment_name: string | null;
+    created_at: string | null;
+};
+
+export type OrderRef = { id: number; number: string; name: string };
+
 export type OrderDetail = OrderRow & {
     status_id: number | null;
     assigned_to: number | null;
@@ -120,6 +143,17 @@ export type OrderDetail = OrderRow & {
     invoice: { id: number; number: string } | null;
     answers: FormAnswers;
     form: FormDefinition | null;
+    messages: OrderMessage[];
+    references: OrderRef[];
+};
+
+export type NotificationItem = {
+    id: string;
+    title: string;
+    message: string;
+    url: string | null;
+    read: boolean;
+    created_at: string | null;
 };
 
 export type InvoiceItemRow = {

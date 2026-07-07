@@ -27,7 +27,7 @@ class OrderController extends Controller
     {
         abort_unless($order->user_id === $request->user()->id, 403);
 
-        $order->load(['status', 'invoice', 'service.form.fields']);
+        $order->load(['status', 'invoice', 'service.form.fields', 'messages.author', 'references']);
 
         return Inertia::render('storefront/orders/show', [
             'order' => $order->toDetailArray(),

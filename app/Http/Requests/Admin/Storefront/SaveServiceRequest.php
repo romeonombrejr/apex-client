@@ -29,6 +29,7 @@ class SaveServiceRequest extends FormRequest
             ],
             'price' => ['required', 'numeric', 'min:0'],
             'form_id' => ['nullable', 'integer', 'exists:forms,id'],
+            'service_category_id' => ['nullable', 'integer', 'exists:service_categories,id'],
             'image' => ['nullable', 'image', 'max:5120'],
             'is_active' => ['boolean'],
             'position' => ['nullable', 'integer', 'min:0'],
@@ -42,6 +43,7 @@ class SaveServiceRequest extends FormRequest
     {
         $this->merge([
             'form_id' => $this->input('form_id') ?: null,
+            'service_category_id' => $this->input('service_category_id') ?: null,
             'billing_interval' => $this->input('billing_interval') ?: null,
             'position' => $this->input('position') === '' ? null : $this->input('position'),
         ]);

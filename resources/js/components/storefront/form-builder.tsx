@@ -198,10 +198,9 @@ export function FormBuilder({
                                     value={field.options.join('\n')}
                                     onChange={(e) =>
                                         update(index, {
-                                            options: e.target.value
-                                                .split('\n')
-                                                .map((o) => o.trim())
-                                                .filter(Boolean),
+                                            // Keep raw lines while typing (so Enter works);
+                                            // the backend trims + drops blanks on save.
+                                            options: e.target.value.split('\n'),
                                         })
                                     }
                                 />

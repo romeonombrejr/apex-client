@@ -5,6 +5,7 @@ use App\Http\Controllers\Storefront\CheckoutController;
 use App\Http\Controllers\Storefront\CreditController;
 use App\Http\Controllers\Storefront\InvoiceController;
 use App\Http\Controllers\Storefront\OrderController;
+use App\Http\Controllers\Storefront\OrderMessageController;
 use App\Http\Controllers\Storefront\StorefrontController;
 use Illuminate\Support\Facades\Route;
 
@@ -34,6 +35,7 @@ Route::middleware(['auth', 'verified', 'suite:storefront', 'permission:storefron
 
         Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
         Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+        Route::post('orders/{order}/messages', [OrderMessageController::class, 'store'])->name('orders.messages.store');
 
         Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
         Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');

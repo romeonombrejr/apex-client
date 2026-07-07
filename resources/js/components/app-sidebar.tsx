@@ -5,6 +5,7 @@ import {
     FileText,
     FolderOpen,
     HardDrive,
+    Layers,
     LayoutGrid,
     Package,
     Palette,
@@ -42,6 +43,7 @@ import { index as filesIndex } from '@/routes/admin/files';
 import { index as permissionsIndex } from '@/routes/admin/permissions';
 import { index as rolesIndex } from '@/routes/admin/roles';
 import { edit as settingsEdit } from '@/routes/admin/settings';
+import { index as categoriesIndex } from '@/routes/admin/storefront/categories';
 import { index as adminCreditsIndex } from '@/routes/admin/storefront/credits';
 import { index as formsIndex } from '@/routes/admin/storefront/forms';
 import { index as adminInvoicesIndex } from '@/routes/admin/storefront/invoices';
@@ -113,6 +115,12 @@ const suiteGroups: SuiteGroupDef[] = [
                 title: 'Services',
                 href: servicesIndex(),
                 icon: Package,
+                permission: 'storefront.manage',
+            },
+            {
+                title: 'Categories',
+                href: categoriesIndex(),
+                icon: Layers,
                 permission: 'storefront.manage',
             },
             {

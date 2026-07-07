@@ -52,7 +52,9 @@ class CreditController extends Controller
 
         Inertia::flash('toast', ['type' => 'success', 'message' => __('Credits adjusted.')]);
 
-        return to_route('admin.storefront.credits.show', $user->id);
+        // Return to wherever the adjustment was made (index or ledger) so the
+        // balance refreshes in place.
+        return back();
     }
 
     public function show(User $user): Response

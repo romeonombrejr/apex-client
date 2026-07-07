@@ -12,7 +12,9 @@ use App\Http\Controllers\Admin\Storefront\CreditController;
 use App\Http\Controllers\Admin\Storefront\FormController;
 use App\Http\Controllers\Admin\Storefront\InvoiceController;
 use App\Http\Controllers\Admin\Storefront\OrderController;
+use App\Http\Controllers\Admin\Storefront\OrderMessageController;
 use App\Http\Controllers\Admin\Storefront\OrderStatusController;
+use App\Http\Controllers\Admin\Storefront\ServiceCategoryController;
 use App\Http\Controllers\Admin\Storefront\ServiceController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\UserController;
@@ -66,8 +68,17 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
     // Storefront suite management (gated by the suite being active for the tenant).
     Route::middleware(['suite:storefront', 'permission:storefront.manage'])
         ->prefix('storefront')->name('storefront.')->group(function () {
+            Route::post('forms/{form}/duplicate', [FormController::class, 'duplicate'])->name('forms.duplicate');
             Route::resource('forms', FormController::class)->except(['show']);
+
+            Route::post('services/reorder', [ServiceController::class, 'reorder'])->name('services.reorder');
+            Route::post('services/{service}/duplicate', [ServiceController::class, 'duplicate'])->name('services.duplicate');
             Route::resource('services', ServiceController::class)->except(['show']);
+
+            Route::post('categories/reorder', [ServiceCategoryController::class, 'reorder'])->name('categories.reorder');
+            Route::resource('categories', ServiceCategoryController::class)->only(['index', 'store', 'update', 'destroy']);
+
+            Route::post('statuses/reorder', [OrderStatusController::class, 'reorder'])->name('statuses.reorder');
             Route::resource('statuses', OrderStatusController::class)->only(['index', 'store', 'update', 'destroy']);
 
             Route::get('credits', [CreditController::class, 'index'])->name('credits.index');
@@ -77,6 +88,7 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
             Route::get('orders', [OrderController::class, 'index'])->name('orders.index');
             Route::get('orders/{order}', [OrderController::class, 'show'])->name('orders.show');
             Route::put('orders/{order}', [OrderController::class, 'update'])->name('orders.update');
+            Route::post('orders/{order}/messages', [OrderMessageController::class, 'store'])->name('orders.messages.store');
 
             Route::get('invoices', [InvoiceController::class, 'index'])->name('invoices.index');
             Route::get('invoices/{invoice}', [InvoiceController::class, 'show'])->name('invoices.show');

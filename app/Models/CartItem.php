@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'service_id', 'quantity', 'selected', 'form_answers', 'price_snapshot'])]
+#[Fillable(['user_id', 'service_id', 'quantity', 'selected', 'form_answers', 'referenced_order_ids', 'price_snapshot'])]
 class CartItem extends Model
 {
     protected function casts(): array
@@ -15,6 +15,7 @@ class CartItem extends Model
             'quantity' => 'integer',
             'selected' => 'boolean',
             'form_answers' => 'array',
+            'referenced_order_ids' => 'array',
             'price_snapshot' => 'decimal:2',
         ];
     }

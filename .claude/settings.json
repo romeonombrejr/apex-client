@@ -36,7 +36,11 @@
       "Bash(cat \"/c/Users/User/AppData/Local/Temp/claude/c--Users-User-docker-projects-apex-client/185942fc-8269-44ac-af16-793607450980/scratchpad/verify_storefront.txt\" | php artisan tinker 2>&1)",
       "PowerShell(php artisan tenants:migrate 2>&1)",
       "PowerShell(php artisan tenants:seed 2>&1)",
-      "Bash(cat \"/c/Users/User/AppData/Local/Temp/claude/c--Users-User-docker-projects-apex-client/185942fc-8269-44ac-af16-793607450980/scratchpad/verify_phase2.txt\" | php artisan tinker 2>&1)"
+      "Bash(cat \"/c/Users/User/AppData/Local/Temp/claude/c--Users-User-docker-projects-apex-client/185942fc-8269-44ac-af16-793607450980/scratchpad/verify_phase2.txt\" | php artisan tinker 2>&1)",
+      "Read(//c/Users/User/docker-projects/apex-client/resources/js/routes/**)",
+      "PowerShell(& \"./node_modules/.bin/prettier\" --write \"resources/js/components/notification-bell.tsx\" \"resources/js/components/app-sidebar-header.tsx\" \"resources/js/components/storefront/order-thread.tsx\" \"resources/js/components/storefront/order-references-picker.tsx\" \"resources/js/pages/storefront/index.tsx\" \"resources/js/pages/storefront/cart.tsx\" \"resources/js/pages/storefront/orders/show.tsx\" \"resources/js/pages/admin/storefront/orders/show.tsx\" 2>&1)",
+      "Bash(cat \"/c/Users/User/AppData/Local/Temp/claude/c--Users-User-docker-projects-apex-client/185942fc-8269-44ac-af16-793607450980/scratchpad/verify_phase3.txt\" | php artisan tinker 2>&1)",
+      "PowerShell(\"---- wayfinder ----\")"
     ]
   }
 }

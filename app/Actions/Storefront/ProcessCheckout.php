@@ -10,7 +10,9 @@ use App\Models\Order;
 use App\Models\OrderStatus;
 use App\Models\Subscription;
 use App\Models\User;
+use App\Notifications\Storefront\StorefrontNotification;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Notification;
 use Illuminate\Validation\ValidationException;
 
 class ProcessCheckout
@@ -49,7 +51,7 @@ class ProcessCheckout
             ]);
         }
 
-        return DB::transaction(function () use ($user, $items, $total): Invoice {
+        $invoice = DB::transaction(function () use ($user, $items, $total): Invoice {
             $invoice = Invoice::create([
                 'number' => 'PENDING',
                 'user_id' => $user->id,
@@ -88,6 +90,16 @@ class ProcessCheckout
                     'total' => $lineTotal,
                 ]);
 
+                // Link any prior orders the client referenced (their own only).
+                $refIds = Order::where('user_id', $user->id)
+                    ->whereIn('id', (array) ($item->referenced_order_ids ?? []))
+                    ->where('invoice_id', '!=', $invoice->id)
+                    ->pluck('id');
+
+                if ($refIds->isNotEmpty()) {
+                    $order->references()->attach($refIds);
+                }
+
                 if ($service && $service->type === 'subscription') {
                     $start = now();
                     $end = ($service->billing_interval === 'yearly')
@@ -120,6 +132,18 @@ class ProcessCheckout
 
             return $invoice;
         });
+
+        // Notify staff/admins after the checkout commits.
+        Notification::send(
+            User::permission('storefront.manage')->get(),
+            new StorefrontNotification(
+                title: __('New order placed'),
+                message: __(':name placed :number', ['name' => $user->name, 'number' => $invoice->number]),
+                url: route('admin.storefront.invoices.show', $invoice->id, false),
+            ),
+        );
+
+        return $invoice;
     }
 
     protected function number(string $prefix, int $id): string

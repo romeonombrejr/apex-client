@@ -1,5 +1,6 @@
 import { Head, Link, router } from '@inertiajs/react';
-import { Pencil, Plus, Trash2 } from 'lucide-react';
+import { ArrowDown, ArrowUp, Copy, Pencil, Plus, Trash2 } from 'lucide-react';
+import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
@@ -10,7 +11,13 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { create, destroy, edit } from '@/routes/admin/storefront/services';
+import {
+    create,
+    destroy,
+    duplicate,
+    edit,
+    reorder,
+} from '@/routes/admin/storefront/services';
 import type { ServiceRow } from '@/types';
 
 export default function ServicesIndex({
@@ -18,6 +25,8 @@ export default function ServicesIndex({
 }: {
     services: ServiceRow[];
 }) {
+    const [ordered, setOrdered] = useState<ServiceRow[]>(services);
+
     function remove(service: ServiceRow) {
         if (!confirm(`Delete the "${service.name}" service?`)) {
             return;
@@ -28,6 +37,27 @@ export default function ServicesIndex({
         });
     }
 
+    function copy(service: ServiceRow) {
+        router.post(duplicate({ service: service.id }).url);
+    }
+
+    function move(index: number, direction: -1 | 1) {
+        const target = index + direction;
+
+        if (target < 0 || target >= ordered.length) {
+            return;
+        }
+
+        const next = [...ordered];
+        [next[index], next[target]] = [next[target], next[index]];
+        setOrdered(next);
+        router.post(
+            reorder().url,
+            { ids: next.map((s) => s.id) },
+            { preserveScroll: true, preserveState: true },
+        );
+    }
+
     return (
         <>
             <Head title="Services" />
@@ -36,7 +66,8 @@ export default function ServicesIndex({
                 <div>
                     <h1 className="text-2xl font-semibold">Services</h1>
                     <p className="text-sm text-muted-foreground">
-                        Offerings clients can browse and order.
+                        Offerings clients can browse and order. Reorder with the
+                        arrows.
                     </p>
                 </div>
                 <Button asChild>
@@ -46,7 +77,7 @@ export default function ServicesIndex({
                 </Button>
             </div>
 
-            {services.length === 0 ? (
+            {ordered.length === 0 ? (
                 <div className="rounded-lg border border-dashed py-16 text-center text-sm text-muted-foreground">
                     No services yet. Create your first offering.
                 </div>
@@ -54,17 +85,42 @@ export default function ServicesIndex({
                 <Table>
                     <TableHeader>
                         <TableRow>
+                            <TableHead className="w-16" />
                             <TableHead>Name</TableHead>
                             <TableHead>Type</TableHead>
                             <TableHead>Price</TableHead>
-                            <TableHead>Form</TableHead>
+                            <TableHead>Category</TableHead>
                             <TableHead>Status</TableHead>
-                            <TableHead className="w-24" />
+                            <TableHead className="w-28" />
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {services.map((service) => (
+                        {ordered.map((service, index) => (
                             <TableRow key={service.id}>
+                                <TableCell>
+                                    <div className="flex flex-col">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-5 w-6"
+                                            disabled={index === 0}
+                                            onClick={() => move(index, -1)}
+                                        >
+                                            <ArrowUp className="h-3 w-3" />
+                                        </Button>
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-5 w-6"
+                                            disabled={
+                                                index === ordered.length - 1
+                                            }
+                                            onClick={() => move(index, 1)}
+                                        >
+                                            <ArrowDown className="h-3 w-3" />
+                                        </Button>
+                                    </div>
+                                </TableCell>
                                 <TableCell className="flex items-center gap-3 font-medium">
                                     {service.image_url && (
                                         <img
@@ -81,7 +137,7 @@ export default function ServicesIndex({
                                         : 'One-time'}
                                 </TableCell>
                                 <TableCell>{service.price}</TableCell>
-                                <TableCell>{service.form ?? '—'}</TableCell>
+                                <TableCell>{service.category ?? '—'}</TableCell>
                                 <TableCell>
                                     <Badge
                                         variant={
@@ -97,6 +153,14 @@ export default function ServicesIndex({
                                 </TableCell>
                                 <TableCell>
                                     <div className="flex justify-end gap-1">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            title="Duplicate"
+                                            onClick={() => copy(service)}
+                                        >
+                                            <Copy className="h-4 w-4" />
+                                        </Button>
                                         <Button
                                             variant="ghost"
                                             size="icon"

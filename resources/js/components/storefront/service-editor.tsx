@@ -25,16 +25,18 @@ type EditableService = {
     billing_interval: BillingInterval | null;
     price: number;
     form_id: number | null;
+    service_category_id: number | null;
     is_active: boolean;
     position: number;
     image_url: string | null;
 };
 
-type FormOption = { id: number; name: string };
+type Option = { id: number; name: string };
 
 type Props = {
     service?: EditableService;
-    forms: FormOption[];
+    forms: Option[];
+    categories: Option[];
     types: ServiceType[];
     intervals: BillingInterval[];
 };
@@ -47,6 +49,7 @@ const TYPE_LABELS: Record<ServiceType, string> = {
 export default function ServiceEditor({
     service,
     forms,
+    categories,
     types,
     intervals,
 }: Props) {
@@ -58,6 +61,9 @@ export default function ServiceEditor({
             service?.billing_interval ?? ('monthly' as BillingInterval),
         price: service?.price?.toString() ?? '0',
         form_id: service?.form_id ? String(service.form_id) : 'none',
+        service_category_id: service?.service_category_id
+            ? String(service.service_category_id)
+            : 'none',
         image: null as File | null,
         is_active: service?.is_active ?? true,
         position: service?.position?.toString() ?? '0',
@@ -67,6 +73,10 @@ export default function ServiceEditor({
         form.transform((data) => ({
             ...data,
             form_id: data.form_id === 'none' ? '' : data.form_id,
+            service_category_id:
+                data.service_category_id === 'none'
+                    ? ''
+                    : data.service_category_id,
             billing_interval:
                 data.type === 'subscription' ? data.billing_interval : '',
             is_active: data.is_active ? '1' : '0',
@@ -205,6 +215,31 @@ export default function ServiceEditor({
                             </SelectContent>
                         </Select>
                         <InputError message={form.errors.form_id} />
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label>Category</Label>
+                        <Select
+                            value={form.data.service_category_id}
+                            onValueChange={(v) =>
+                                form.setData('service_category_id', v)
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="none">
+                                    No category
+                                </SelectItem>
+                                {categories.map((c) => (
+                                    <SelectItem key={c.id} value={String(c.id)}>
+                                        {c.name}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <InputError message={form.errors.service_category_id} />
                     </div>
                 </div>
 
