@@ -18,6 +18,8 @@ use App\Http\Controllers\Admin\Storefront\ServiceCategoryController;
 use App\Http\Controllers\Admin\Storefront\ServiceController;
 use App\Http\Controllers\Admin\ThemeController;
 use App\Http\Controllers\Admin\UserController;
+use App\Http\Controllers\Admin\UserInvitationController;
+use App\Http\Controllers\TenantImpersonationController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(function () {
@@ -25,9 +27,38 @@ Route::middleware(['auth', 'verified'])->prefix('admin')->name('admin.')->group(
 
     Route::redirect('/', '/admin/dashboard');
 
-    Route::middleware('permission:users.manage')->group(function () {
-        Route::resource('users', UserController::class)->except(['show']);
+    // User administration is split per action (see the users.* permissions):
+    // staff can typically view the roster (and copy existing links) while
+    // minting links, resets, edits, deletes and impersonation stay admin-only.
+    // Literal segments are declared before {user} routes so they aren't
+    // captured as parameters.
+    Route::middleware('permission:users.create')->group(function () {
+        Route::post('users/invitations', [UserInvitationController::class, 'store'])->name('users.invitations.store');
+        Route::get('users/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('users', [UserController::class, 'store'])->name('users.store');
     });
+
+    Route::middleware('permission:users.links')->group(function () {
+        Route::post('users/{user}/link', [UserInvitationController::class, 'link'])->name('users.link');
+        Route::delete('users/{user}/link', [UserInvitationController::class, 'revoke'])->name('users.link.revoke');
+    });
+
+    Route::middleware('permission:users.reset')
+        ->post('users/{user}/reset-link', [UserInvitationController::class, 'resetLink'])->name('users.reset-link');
+
+    Route::middleware('permission:users.impersonate')
+        ->post('users/{user}/impersonate', [TenantImpersonationController::class, 'store'])->name('users.impersonate');
+
+    Route::middleware('permission:users.view')
+        ->get('users', [UserController::class, 'index'])->name('users.index');
+
+    Route::middleware('permission:users.edit')->group(function () {
+        Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+        Route::match(['put', 'patch'], 'users/{user}', [UserController::class, 'update'])->name('users.update');
+    });
+
+    Route::middleware('permission:users.delete')
+        ->delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
 
     Route::middleware('permission:roles.manage')->group(function () {
         Route::resource('roles', RoleController::class)->except(['show']);

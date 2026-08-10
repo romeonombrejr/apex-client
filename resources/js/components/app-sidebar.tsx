@@ -172,7 +172,7 @@ const adminGroups: GroupDef[] = [
                 title: 'Users',
                 href: usersIndex(),
                 icon: User,
-                permission: 'users.manage',
+                permission: 'users.view',
             },
             {
                 title: 'Roles',

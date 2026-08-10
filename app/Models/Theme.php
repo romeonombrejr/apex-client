@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 
-#[Fillable(['name', 'light', 'dark', 'radius', 'fonts', 'is_active'])]
+#[Fillable(['name', 'light', 'dark', 'radius', 'button_size', 'fonts', 'is_active'])]
 class Theme extends Model
 {
     use HasFactory;

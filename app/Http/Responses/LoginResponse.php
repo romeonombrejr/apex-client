@@ -12,7 +12,13 @@ class LoginResponse implements LoginResponseContract
         $user = $request->user();
 
         $redirect = $user->hasAnyPermission([
-            'users.manage',
+            'users.view',
+            'users.create',
+            'users.edit',
+            'users.delete',
+            'users.links',
+            'users.reset',
+            'users.impersonate',
             'roles.manage',
             'permissions.manage',
             'settings.manage',

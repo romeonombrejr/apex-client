@@ -13,7 +13,7 @@ class UpdateUserRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        return $this->user()->hasPermissionTo('users.manage');
+        return $this->user()->hasPermissionTo('users.edit');
     }
 
     /**
@@ -28,6 +28,7 @@ class UpdateUserRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', "unique:users,email,{$userId}"],
+            'company' => ['nullable', 'string', 'max:100'],
             'password' => ['nullable', 'string', Password::defaults(), 'confirmed'],
             'role' => ['required', 'string', 'in:admin,staff,client'],
         ];

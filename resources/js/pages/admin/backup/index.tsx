@@ -28,7 +28,9 @@ type PageProps = {
 export default function BackupIndex({ backups }: PageProps) {
     const [creating, setCreating] = useState(false);
     const [restoring, setRestoring] = useState(false);
-    const [confirmRestore, setConfirmRestore] = useState<BackupRow | null>(null);
+    const [confirmRestore, setConfirmRestore] = useState<BackupRow | null>(
+        null,
+    );
 
     function handleCreate() {
         setCreating(true);
@@ -36,7 +38,10 @@ export default function BackupIndex({ backups }: PageProps) {
     }
 
     function handleRestoreConfirm() {
-        if (!confirmRestore) return;
+        if (!confirmRestore) {
+            return;
+        }
+
         setRestoring(true);
         router.post(
             restore({ path: confirmRestore.path }).url,
@@ -157,9 +162,7 @@ export default function BackupIndex({ backups }: PageProps) {
                     <DialogTitle>Restore database?</DialogTitle>
                     <DialogDescription asChild>
                         <div className="space-y-3">
-                            <p>
-                                You are about to restore the database from:
-                            </p>
+                            <p>You are about to restore the database from:</p>
                             <p className="rounded bg-muted px-3 py-2 font-mono text-sm">
                                 {confirmRestore?.name}
                             </p>

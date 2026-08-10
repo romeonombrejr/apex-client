@@ -73,6 +73,22 @@ export default function EditUser({ user, roles }: PageProps) {
                         </div>
 
                         <div className="grid gap-2">
+                            <Label htmlFor="company">
+                                Company{' '}
+                                <span className="font-normal text-muted-foreground">
+                                    (optional)
+                                </span>
+                            </Label>
+                            <Input
+                                id="company"
+                                name="company"
+                                autoComplete="organization"
+                                defaultValue={user.company ?? ''}
+                            />
+                            <InputError message={errors.company} />
+                        </div>
+
+                        <div className="grid gap-2">
                             <Label htmlFor="password">
                                 New password{' '}
                                 <span className="font-normal text-muted-foreground">

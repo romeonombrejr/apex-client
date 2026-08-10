@@ -32,6 +32,7 @@ export default function AuditLogsIndex({ activities }: PageProps) {
                         <TableHead>Description</TableHead>
                         <TableHead>Subject</TableHead>
                         <TableHead>By</TableHead>
+                        <TableHead>IP</TableHead>
                         <TableHead>When</TableHead>
                     </TableRow>
                 </TableHeader>
@@ -39,7 +40,7 @@ export default function AuditLogsIndex({ activities }: PageProps) {
                     {activities.data.length === 0 && (
                         <TableRow>
                             <TableCell
-                                colSpan={4}
+                                colSpan={5}
                                 className="text-center text-muted-foreground"
                             >
                                 No activity recorded yet.
@@ -56,6 +57,9 @@ export default function AuditLogsIndex({ activities }: PageProps) {
                             </TableCell>
                             <TableCell className="text-muted-foreground">
                                 {activity.causer ?? 'System'}
+                            </TableCell>
+                            <TableCell className="font-mono text-xs text-muted-foreground">
+                                {activity.ip ?? '—'}
                             </TableCell>
                             <TableCell className="text-sm text-muted-foreground">
                                 {new Date(activity.created_at).toLocaleString()}

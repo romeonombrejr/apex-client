@@ -57,6 +57,11 @@ class HandleInertiaRequests extends Middleware
             ],
             'superAdmin' => $request->user('superadmin'),
             'suites' => tenant() ? tenant()->activeSuites() : [],
+            // Drives the "you are viewing the app as …" banner; the admin's own
+            // id is stashed in the session by TenantImpersonationController.
+            'impersonating' => ($user && $request->session()->get('impersonator_id'))
+                ? ['name' => $user->name]
+                : null,
             'notifications' => $this->notifications($user),
             'sidebarOpen' => ! $request->hasCookie('sidebar_state') || $request->cookie('sidebar_state') === 'true',
         ];

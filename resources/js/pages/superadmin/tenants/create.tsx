@@ -49,7 +49,8 @@ export default function TenantCreate({ plans }: PageProps) {
                                 placeholder="acme.example.com"
                             />
                             <p className="text-xs text-muted-foreground">
-                                The custom domain this tenant will be reached on.
+                                The custom domain this tenant will be reached
+                                on.
                             </p>
                             <InputError message={errors.domain} />
                         </div>

@@ -16,13 +16,13 @@ import {
 } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
-    type ChartConfig,
     ChartContainer,
     ChartLegend,
     ChartLegendContent,
     ChartTooltip,
     ChartTooltipContent,
 } from '@/components/ui/chart';
+import type { ChartConfig } from '@/components/ui/chart';
 
 type MonthlyEntry = { name: string; Users: number; Backups: number };
 type RoleEntry = { name: string; value: number };
@@ -300,7 +300,10 @@ export default function AdminDashboard({
                                             <ChartTooltipContent nameKey="name" />
                                         }
                                     />
-                                    <RadialBar dataKey="value" cornerRadius={10} />
+                                    <RadialBar
+                                        dataKey="value"
+                                        cornerRadius={10}
+                                    />
                                     <ChartLegend
                                         content={
                                             <ChartLegendContent nameKey="name" />

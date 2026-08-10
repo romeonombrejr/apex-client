@@ -46,6 +46,7 @@ export function applyTheme(
             styleTag.id = 'app-theme';
             document.head.appendChild(styleTag);
         }
+
         if (styleTag.textContent !== css) {
             styleTag.textContent = css;
         }

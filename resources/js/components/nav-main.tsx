@@ -1,6 +1,10 @@
 import { Link } from '@inertiajs/react';
 import { ChevronRight } from 'lucide-react';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import {
+    Collapsible,
+    CollapsibleContent,
+    CollapsibleTrigger,
+} from '@/components/ui/collapsible';
 import {
     SidebarGroup,
     SidebarGroupLabel,
@@ -40,12 +44,16 @@ export function NavMain({
                         <Collapsible
                             key={item.title}
                             asChild
-                            defaultOpen={item.children.some((child) => isCurrentOrParentUrl(child.href))}
+                            defaultOpen={item.children.some((child) =>
+                                isCurrentOrParentUrl(child.href),
+                            )}
                             className="group/collapsible"
                         >
                             <SidebarMenuItem>
                                 <CollapsibleTrigger asChild>
-                                    <SidebarMenuButton tooltip={{ children: item.title }}>
+                                    <SidebarMenuButton
+                                        tooltip={{ children: item.title }}
+                                    >
                                         {item.icon && <item.icon />}
                                         <span>{item.title}</span>
                                         <ChevronRight className="ml-auto transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90" />
@@ -54,14 +62,25 @@ export function NavMain({
                                 <CollapsibleContent>
                                     <SidebarMenuSub>
                                         {item.children.map((child) => (
-                                            <SidebarMenuSubItem key={child.title}>
+                                            <SidebarMenuSubItem
+                                                key={child.title}
+                                            >
                                                 <SidebarMenuSubButton
                                                     asChild
-                                                    isActive={isCurrentUrl(child.href)}
+                                                    isActive={isCurrentUrl(
+                                                        child.href,
+                                                    )}
                                                 >
-                                                    <Link href={child.href} prefetch>
-                                                        {child.icon && <child.icon />}
-                                                        <span>{child.title}</span>
+                                                    <Link
+                                                        href={child.href}
+                                                        prefetch
+                                                    >
+                                                        {child.icon && (
+                                                            <child.icon />
+                                                        )}
+                                                        <span>
+                                                            {child.title}
+                                                        </span>
                                                     </Link>
                                                 </SidebarMenuSubButton>
                                             </SidebarMenuSubItem>

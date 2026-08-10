@@ -46,6 +46,19 @@ class ThemeCss
     public const RADIUS_PATTERN = '/^\d*\.?\d+(rem|px|em)$/';
 
     /**
+     * Button size presets. Scoping Tailwind's --spacing to buttons scales
+     * every spacing-derived utility on them (h-*, px-*, gap-*, size-*), so
+     * all button size variants shrink/grow proportionally. `default` emits
+     * no CSS. Keep in sync with resources/js/lib/theme.ts BUTTON_SIZE_CSS.
+     */
+    public const BUTTON_SIZES = [
+        'sm' => ['spacing' => '0.225rem', 'font-size' => '0.8125rem'],
+        'default' => null,
+        'lg' => ['spacing' => '0.275rem', 'font-size' => '0.9375rem'],
+        'xl' => ['spacing' => '0.3rem', 'font-size' => '1rem'],
+    ];
+
+    /**
      * Font fallback stacks appended after a chosen family, by category.
      */
     protected const FONT_FALLBACKS = [
@@ -71,8 +84,22 @@ class ThemeCss
 
         $darkLines = self::variableLines((array) $theme->dark);
 
-        return ":root {\n".implode("\n", $rootLines)."\n}\n"
+        $css = ":root {\n".implode("\n", $rootLines)."\n}\n"
             .".dark {\n".implode("\n", $darkLines)."\n}";
+
+        // `html` prefix so the font-size wins over the text-sm utility class.
+        $button = is_string($theme->button_size)
+            ? (self::BUTTON_SIZES[$theme->button_size] ?? null)
+            : null;
+
+        if ($button) {
+            $css .= "\nhtml [data-slot=\"button\"] {\n"
+                ."    --spacing: {$button['spacing']};\n"
+                ."    font-size: {$button['font-size']};\n"
+                .'}';
+        }
+
+        return $css;
     }
 
     /**

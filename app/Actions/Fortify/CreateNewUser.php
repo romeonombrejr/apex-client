@@ -23,6 +23,9 @@ class CreateNewUser implements CreatesNewUsers
     {
         Validator::make($input, [
             ...$this->profileRules(),
+            // Self-registered accounts must state their company (invited and
+            // guest-created accounts provide it during onboarding instead).
+            'company' => ['required', 'string', 'max:100'],
             'password' => $this->passwordRules(),
         ])->validate();
 
@@ -35,6 +38,7 @@ class CreateNewUser implements CreatesNewUsers
         return User::create([
             'name' => $input['name'],
             'email' => $input['email'],
+            'company' => $input['company'],
             'password' => $input['password'],
         ]);
     }

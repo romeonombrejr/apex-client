@@ -10,8 +10,10 @@ use Illuminate\Support\Facades\Date;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules\Password;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
+use Spatie\Activitylog\Models\Activity;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -29,6 +31,29 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->configureDefaults();
+
+        // Stamp the requester's IP + user agent onto every audit-log entry
+        // (security/audit purposes only; disclosed in the privacy policy and
+        // pruned by the scheduled activitylog:clean). CLI runs have no
+        // request IP and are left unstamped.
+        Activity::saving(function (Activity $activity): void {
+            // Console runs (scheduler, sync commands) have no requester —
+            // a synthetic 127.0.0.1 would only mislead.
+            if (app()->runningInConsole()) {
+                return;
+            }
+
+            $ip = request()->ip();
+
+            if ($ip === null) {
+                return;
+            }
+
+            $activity->properties = $activity->properties->merge([
+                'ip' => $ip,
+                'user_agent' => Str::limit((string) request()->userAgent(), 255),
+            ]);
+        });
 
         // Branding + active theme for the blade <head>. Only resolve from the
         // tenant tables when tenancy is initialized; central requests use defaults.

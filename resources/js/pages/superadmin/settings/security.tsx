@@ -1,8 +1,8 @@
 import { Form, Head, router } from '@inertiajs/react';
 import { KeyRound, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import PasskeyRegistration from '@/components/passkey-register';
 import InputError from '@/components/input-error';
+import PasskeyRegistration from '@/components/passkey-register';
 import PasswordInput from '@/components/password-input';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

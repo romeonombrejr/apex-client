@@ -22,6 +22,7 @@ class ThemeController extends Controller
                 'light' => $theme->light,
                 'dark' => $theme->dark,
                 'radius' => $theme->radius,
+                'button_size' => $theme->button_size,
                 'fonts' => $theme->fonts,
                 'is_active' => $theme->is_active,
             ]),

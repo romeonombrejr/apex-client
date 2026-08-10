@@ -5,6 +5,7 @@ const navItems = [
     { label: 'Dashboard', href: '/superadmin/dashboard' },
     { label: 'Tenants', href: '/superadmin/tenants' },
     { label: 'Plans', href: '/superadmin/plans' },
+    { label: 'Backups', href: '/superadmin/backups' },
     { label: 'Settings', href: '/superadmin/settings' },
 ];
 

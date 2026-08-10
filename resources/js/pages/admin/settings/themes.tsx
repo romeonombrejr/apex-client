@@ -24,15 +24,16 @@ import {
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { useAppearance } from '@/hooks/use-appearance';
 import {
+    BUTTON_SIZE_OPTIONS,
     compilePreviewCss,
+    DEFAULT_BUTTON_SIZE,
     DEFAULT_FONT,
     DEFAULT_RADIUS,
     defaultWorkingTheme,
     PRESETS,
     THEME_GROUPS,
-    type ThemeMode,
-    type WorkingTheme,
 } from '@/lib/theme';
+import type { ButtonSize, ThemeMode, WorkingTheme } from '@/lib/theme';
 
 type FontOption = { family: string; category: string; weights: number[] };
 type SavedTheme = WorkingTheme & { is_active: boolean };
@@ -44,17 +45,44 @@ type PageProps = {
     defaultFont: string;
 };
 
-const RADIUS_OPTIONS = ['0rem', '0.25rem', '0.375rem', '0.5rem', '0.625rem', '0.75rem', '1rem'];
+const RADIUS_OPTIONS = [
+    '0rem',
+    '0.25rem',
+    '0.375rem',
+    '0.5rem',
+    '0.625rem',
+    '0.75rem',
+    '1rem',
+];
+
+function toWorking(theme: SavedTheme): WorkingTheme {
+    return {
+        id: theme.id,
+        name: theme.name,
+        light: theme.light,
+        dark: theme.dark,
+        radius: theme.radius || DEFAULT_RADIUS,
+        button_size: theme.button_size || DEFAULT_BUTTON_SIZE,
+        fonts: theme.fonts ?? { sans: null, serif: null, mono: null },
+    };
+}
 
 export default function ThemesEditor({
     themes,
     activeThemeId,
     fontOptions,
 }: PageProps) {
-    const { appearance, resolvedAppearance, updateAppearance } = useAppearance();
+    const { appearance, resolvedAppearance, updateAppearance } =
+        useAppearance();
 
-    const [working, setWorking] = useState<WorkingTheme>(defaultWorkingTheme);
-    const [snapshot, setSnapshot] = useState(() => JSON.stringify(defaultWorkingTheme()));
+    // Open on the currently active theme so the page reflects what the app
+    // actually runs; the default palette only when no theme is active.
+    const [working, setWorking] = useState<WorkingTheme>(() => {
+        const active = themes.find((theme) => theme.id === activeThemeId);
+
+        return active ? toWorking(active) : defaultWorkingTheme();
+    });
+    const [snapshot, setSnapshot] = useState(() => JSON.stringify(working));
     // Open on whichever mode the app is currently showing.
     const [mode, setMode] = useState<ThemeMode>(resolvedAppearance);
     const loadedFonts = useRef<Set<string>>(new Set());
@@ -63,7 +91,11 @@ export default function ThemesEditor({
     // Restore the user's original preference when they leave the editor.
     const originalAppearance = useRef(appearance);
     useEffect(() => {
-        return () => updateAppearance(originalAppearance.current);
+        // Read the ref now rather than in the cleanup: by teardown the
+        // current value is not guaranteed to be the one we mounted with.
+        const original = originalAppearance.current;
+
+        return () => updateAppearance(original);
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
@@ -72,15 +104,22 @@ export default function ThemesEditor({
         updateAppearance(next);
     }
 
-    const dirty = useMemo(() => JSON.stringify(working) !== snapshot, [working, snapshot]);
+    const dirty = useMemo(
+        () => JSON.stringify(working) !== snapshot,
+        [working, snapshot],
+    );
 
     // Live preview: a style tag re-appended on every change so it wins the cascade.
     useEffect(() => {
-        let tag = document.getElementById('theme-editor-preview') as HTMLStyleElement | null;
+        let tag = document.getElementById(
+            'theme-editor-preview',
+        ) as HTMLStyleElement | null;
+
         if (!tag) {
             tag = document.createElement('style');
             tag.id = 'theme-editor-preview';
         }
+
         tag.textContent = compilePreviewCss(working);
         document.head.appendChild(tag);
     }, [working]);
@@ -98,11 +137,21 @@ export default function ThemesEditor({
     useEffect(() => {
         (['sans', 'serif', 'mono'] as const).forEach((cat) => {
             const family = working.fonts[cat];
-            if (!family || family === DEFAULT_FONT || loadedFonts.current.has(family)) {
+
+            if (
+                !family ||
+                family === DEFAULT_FONT ||
+                loadedFonts.current.has(family)
+            ) {
                 return;
             }
+
             const entry = fontOptions.find((f) => f.family === family);
-            if (!entry) return;
+
+            if (!entry) {
+                return;
+            }
+
             const slug = family.toLowerCase().replace(/ /g, '-');
             const link = document.createElement('link');
             link.rel = 'stylesheet';
@@ -117,6 +166,7 @@ export default function ThemesEditor({
         if (dirty && !confirm('Discard unsaved changes?')) {
             return;
         }
+
         setWorking(theme);
         setSnapshot(JSON.stringify(theme));
     }
@@ -128,7 +178,10 @@ export default function ThemesEditor({
     function setFont(cat: 'sans' | 'serif' | 'mono', family: string) {
         setWorking((w) => ({
             ...w,
-            fonts: { ...w.fonts, [cat]: family === DEFAULT_FONT ? null : family },
+            fonts: {
+                ...w.fonts,
+                [cat]: family === DEFAULT_FONT ? null : family,
+            },
         }));
     }
 
@@ -138,6 +191,7 @@ export default function ThemesEditor({
             light: working.light,
             dark: working.dark,
             radius: working.radius,
+            button_size: working.button_size,
             fonts: working.fonts,
         };
     }
@@ -149,13 +203,19 @@ export default function ThemesEditor({
     function save() {
         if (!working.name.trim()) {
             toast.error('Give the theme a name first.');
+
             return;
         }
+
         if (working.id) {
-            router.put(ThemeController.update.url(working.id), payload(working.name), {
-                preserveScroll: true,
-                onError: showErrors,
-            });
+            router.put(
+                ThemeController.update.url(working.id),
+                payload(working.name),
+                {
+                    preserveScroll: true,
+                    onError: showErrors,
+                },
+            );
         } else {
             router.post(ThemeController.store.url(), payload(working.name), {
                 preserveScroll: true,
@@ -165,17 +225,36 @@ export default function ThemesEditor({
     }
 
     function activate() {
-        if (!working.id) return;
-        router.post(ThemeController.activate.url(working.id), {}, { preserveScroll: true });
+        if (!working.id) {
+            return;
+        }
+
+        router.post(
+            ThemeController.activate.url(working.id),
+            {},
+            { preserveScroll: true },
+        );
     }
 
     function remove() {
-        if (!working.id || !confirm(`Delete "${working.name}"?`)) return;
-        router.delete(ThemeController.destroy.url(working.id), { preserveScroll: true });
+        if (!working.id || !confirm(`Delete "${working.name}"?`)) {
+            return;
+        }
+
+        router.delete(ThemeController.destroy.url(working.id), {
+            preserveScroll: true,
+        });
     }
 
     function resetToDefault() {
-        if (!confirm('Reset to the default theme? Any active theme will be deactivated.')) return;
+        if (
+            !confirm(
+                'Reset to the default theme? Any active theme will be deactivated.',
+            )
+        ) {
+            return;
+        }
+
         router.post(ThemeController.reset.url(), {}, { preserveScroll: true });
         load(defaultWorkingTheme());
     }
@@ -191,8 +270,8 @@ export default function ThemesEditor({
                 <div>
                     <h2 className="text-lg font-semibold">Theme editor</h2>
                     <p className="text-sm text-muted-foreground">
-                        Customize colors, radius, and fonts. Changes preview live; save and
-                        activate to apply across the app.
+                        Customize colors, radius, and fonts. Changes preview
+                        live; save and activate to apply across the app.
                     </p>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -204,7 +283,11 @@ export default function ThemesEditor({
                             setSnapshot('');
                         }}
                     />
-                    <Button variant="outline" size="sm" onClick={resetToDefault}>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={resetToDefault}
+                    >
                         <RotateCcw className="mr-1 h-4 w-4" />
                         Reset to default
                     </Button>
@@ -219,7 +302,12 @@ export default function ThemesEditor({
                         <Input
                             id="theme-name"
                             value={working.name}
-                            onChange={(e) => setWorking((w) => ({ ...w, name: e.target.value }))}
+                            onChange={(e) =>
+                                setWorking((w) => ({
+                                    ...w,
+                                    name: e.target.value,
+                                }))
+                            }
                             placeholder="e.g. Brand 2025"
                         />
                     </div>
@@ -240,7 +328,10 @@ export default function ThemesEditor({
 
                     <div className="max-h-[60vh] space-y-2 overflow-y-auto pr-1">
                         {THEME_GROUPS.map((group) => (
-                            <Collapsible key={group.label} defaultOpen={group.label === 'Primary'}>
+                            <Collapsible
+                                key={group.label}
+                                defaultOpen={group.label === 'Primary'}
+                            >
                                 <CollapsibleTrigger className="flex w-full items-center justify-between rounded-md border px-3 py-2 text-sm font-medium">
                                     {group.label}
                                 </CollapsibleTrigger>
@@ -262,7 +353,9 @@ export default function ThemesEditor({
                         <Label>Radius</Label>
                         <Select
                             value={working.radius}
-                            onValueChange={(v) => setWorking((w) => ({ ...w, radius: v }))}
+                            onValueChange={(v) =>
+                                setWorking((w) => ({ ...w, radius: v }))
+                            }
                         >
                             <SelectTrigger>
                                 <SelectValue />
@@ -270,7 +363,38 @@ export default function ThemesEditor({
                             <SelectContent>
                                 {RADIUS_OPTIONS.map((r) => (
                                     <SelectItem key={r} value={r}>
-                                        {r === DEFAULT_RADIUS ? `${r} (default)` : r}
+                                        {r === DEFAULT_RADIUS
+                                            ? `${r} (default)`
+                                            : r}
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                    </div>
+
+                    <div className="grid gap-2">
+                        <Label>Button size</Label>
+                        <Select
+                            value={working.button_size}
+                            onValueChange={(v) =>
+                                setWorking((w) => ({
+                                    ...w,
+                                    button_size: v as ButtonSize,
+                                }))
+                            }
+                        >
+                            <SelectTrigger>
+                                <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                                {BUTTON_SIZE_OPTIONS.map((option) => (
+                                    <SelectItem
+                                        key={option.value}
+                                        value={option.value}
+                                    >
+                                        {option.value === DEFAULT_BUTTON_SIZE
+                                            ? `${option.label} (default)`
+                                            : option.label}
                                     </SelectItem>
                                 ))}
                             </SelectContent>
@@ -288,9 +412,14 @@ export default function ThemesEditor({
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value={DEFAULT_FONT}>Default</SelectItem>
+                                    <SelectItem value={DEFAULT_FONT}>
+                                        Default
+                                    </SelectItem>
                                     {fontsByCategory(cat).map((f) => (
-                                        <SelectItem key={f.family} value={f.family}>
+                                        <SelectItem
+                                            key={f.family}
+                                            value={f.family}
+                                        >
                                             {f.family}
                                         </SelectItem>
                                     ))}
@@ -300,7 +429,10 @@ export default function ThemesEditor({
                     ))}
 
                     <div className="flex flex-wrap gap-2 border-t pt-4">
-                        <Button onClick={save} disabled={!dirty && working.id !== null}>
+                        <Button
+                            onClick={save}
+                            disabled={!dirty && working.id !== null}
+                        >
                             {working.id ? 'Save' : 'Save theme'}
                         </Button>
                         {working.id && (
@@ -311,9 +443,15 @@ export default function ThemesEditor({
                                     disabled={activeThemeId === working.id}
                                 >
                                     <Check className="mr-1 h-4 w-4" />
-                                    {activeThemeId === working.id ? 'Active' : 'Activate'}
+                                    {activeThemeId === working.id
+                                        ? 'Active'
+                                        : 'Activate'}
                                 </Button>
-                                <Button variant="ghost" size="icon" onClick={remove}>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={remove}
+                                >
                                     <Trash2 className="h-4 w-4 text-destructive" />
                                 </Button>
                             </>
@@ -335,7 +473,9 @@ export default function ThemesEditor({
                                     key={preset.name}
                                     variant="outline"
                                     size="sm"
-                                    onClick={() => load({ ...preset, name: preset.name })}
+                                    onClick={() =>
+                                        load({ ...preset, name: preset.name })
+                                    }
                                 >
                                     {preset.name}
                                 </Button>
@@ -345,27 +485,20 @@ export default function ThemesEditor({
 
                     {themes.length > 0 && (
                         <div>
-                            <h3 className="mb-2 text-sm font-medium">Saved themes</h3>
+                            <h3 className="mb-2 text-sm font-medium">
+                                Saved themes
+                            </h3>
                             <div className="flex flex-wrap gap-2">
                                 {themes.map((theme) => (
                                     <Button
                                         key={theme.id}
-                                        variant={working.id === theme.id ? 'default' : 'outline'}
-                                        size="sm"
-                                        onClick={() =>
-                                            load({
-                                                id: theme.id,
-                                                name: theme.name,
-                                                light: theme.light,
-                                                dark: theme.dark,
-                                                radius: theme.radius || DEFAULT_RADIUS,
-                                                fonts: theme.fonts ?? {
-                                                    sans: null,
-                                                    serif: null,
-                                                    mono: null,
-                                                },
-                                            })
+                                        variant={
+                                            working.id === theme.id
+                                                ? 'default'
+                                                : 'outline'
                                         }
+                                        size="sm"
+                                        onClick={() => load(toWorking(theme))}
                                     >
                                         {theme.name}
                                         {theme.is_active && (

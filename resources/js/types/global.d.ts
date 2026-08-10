@@ -25,6 +25,8 @@ declare module '@inertiajs/core' {
             roles: string[];
             superAdmin: SuperAdmin | null;
             suites: string[];
+            /** Set while an admin is viewing the app as another user. */
+            impersonating: { name: string } | null;
             notifications: { unread: number; items: NotificationItem[] };
             sidebarOpen: boolean;
             [key: string]: unknown;

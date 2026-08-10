@@ -9,7 +9,10 @@ import { Label } from '@/components/ui/label';
 import { Spinner } from '@/components/ui/spinner';
 
 const passkeyRoutes = {
-    options: { url: '/superadmin/passkeys/login/options', method: 'get' as const },
+    options: {
+        url: '/superadmin/passkeys/login/options',
+        method: 'get' as const,
+    },
     submit: { url: '/superadmin/passkeys/login', method: 'post' as const },
 };
 
@@ -18,7 +21,10 @@ export default function SuperAdminLogin() {
         <>
             <Head title="Super Admin log in" />
 
-            <PasskeyVerify routes={passkeyRoutes} separator="Or continue with email" />
+            <PasskeyVerify
+                routes={passkeyRoutes}
+                separator="Or continue with email"
+            />
 
             <Form
                 action="/superadmin/login"

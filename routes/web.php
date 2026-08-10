@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\DiscourageSearchIndexing;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -15,7 +16,9 @@ use Illuminate\Support\Facades\Route;
 
 $centralDomain = config('tenancy.central_domains')[0] ?? 'localhost';
 
-Route::domain($centralDomain)->group(function () {
+// The console is invite-only knowledge — keep the whole central hostname out
+// of search indexes so nobody stumbles onto the login page via a result.
+Route::domain($centralDomain)->middleware(DiscourageSearchIndexing::class)->group(function () {
     Route::get('/', fn () => redirect()->route('superadmin.login'));
 
     require __DIR__.'/superadmin.php';

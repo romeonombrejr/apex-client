@@ -17,10 +17,38 @@ export type WorkingTheme = {
     light: VarMap;
     dark: VarMap;
     radius: string;
+    button_size: ButtonSize;
     fonts: ThemeFonts;
 };
 
 export const DEFAULT_RADIUS = '0.625rem';
+
+export type ButtonSize = 'sm' | 'default' | 'lg' | 'xl';
+
+export const DEFAULT_BUTTON_SIZE: ButtonSize = 'default';
+
+export const BUTTON_SIZE_OPTIONS: { value: ButtonSize; label: string }[] = [
+    { value: 'sm', label: 'Small' },
+    { value: 'default', label: 'Default' },
+    { value: 'lg', label: 'Large' },
+    { value: 'xl', label: 'Extra large' },
+];
+
+/**
+ * Mirrors app/Support/ThemeCss.php BUTTON_SIZES. Scoping Tailwind's
+ * --spacing to buttons scales every spacing-derived utility on them
+ * (h-*, px-*, gap-*, size-*), so all button size variants shrink/grow
+ * proportionally. `default` emits no CSS.
+ */
+const BUTTON_SIZE_CSS: Record<
+    ButtonSize,
+    { spacing: string; fontSize: string } | null
+> = {
+    sm: { spacing: '0.225rem', fontSize: '0.8125rem' },
+    default: null,
+    lg: { spacing: '0.275rem', fontSize: '0.9375rem' },
+    xl: { spacing: '0.3rem', fontSize: '1rem' },
+};
 
 export const DEFAULT_LIGHT: VarMap = {
     background: 'oklch(1 0 0)',
@@ -95,7 +123,10 @@ export const DEFAULT_DARK: VarMap = {
 export const THEME_KEYS = Object.keys(DEFAULT_LIGHT);
 
 export const THEME_GROUPS: { label: string; keys: string[] }[] = [
-    { label: 'Base', keys: ['background', 'foreground', 'border', 'input', 'ring'] },
+    {
+        label: 'Base',
+        keys: ['background', 'foreground', 'border', 'input', 'ring'],
+    },
     { label: 'Primary', keys: ['primary', 'primary-foreground'] },
     { label: 'Secondary', keys: ['secondary', 'secondary-foreground'] },
     { label: 'Accent', keys: ['accent', 'accent-foreground'] },
@@ -103,12 +134,21 @@ export const THEME_GROUPS: { label: string; keys: string[] }[] = [
     { label: 'Popover', keys: ['popover', 'popover-foreground'] },
     { label: 'Muted', keys: ['muted', 'muted-foreground'] },
     { label: 'Destructive', keys: ['destructive', 'destructive-foreground'] },
-    { label: 'Charts', keys: ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'] },
+    {
+        label: 'Charts',
+        keys: ['chart-1', 'chart-2', 'chart-3', 'chart-4', 'chart-5'],
+    },
     {
         label: 'Sidebar',
         keys: [
-            'sidebar', 'sidebar-foreground', 'sidebar-primary', 'sidebar-primary-foreground',
-            'sidebar-accent', 'sidebar-accent-foreground', 'sidebar-border', 'sidebar-ring',
+            'sidebar',
+            'sidebar-foreground',
+            'sidebar-primary',
+            'sidebar-primary-foreground',
+            'sidebar-accent',
+            'sidebar-accent-foreground',
+            'sidebar-border',
+            'sidebar-ring',
         ],
     },
 ];
@@ -135,6 +175,7 @@ export function defaultWorkingTheme(): WorkingTheme {
         light: { ...DEFAULT_LIGHT },
         dark: { ...DEFAULT_DARK },
         radius: DEFAULT_RADIUS,
+        button_size: DEFAULT_BUTTON_SIZE,
         fonts: { sans: null, serif: null, mono: null },
     };
 }
@@ -149,15 +190,27 @@ export function compilePreviewCss(theme: WorkingTheme): string {
 
     (['sans', 'serif', 'mono'] as const).forEach((cat) => {
         const family = theme.fonts[cat];
+
         if (family && family !== DEFAULT_FONT) {
             const varName = cat === 'sans' ? '--font-sans' : `--font-${cat}`;
-            rootLines.push(`  ${varName}: '${family}', ${FONT_FALLBACKS[cat]};`);
+            rootLines.push(
+                `  ${varName}: '${family}', ${FONT_FALLBACKS[cat]};`,
+            );
         }
     });
 
     const darkLines = THEME_KEYS.map((k) => `  --${k}: ${theme.dark[k]};`);
 
-    return `:root {\n${rootLines.join('\n')}\n}\n.dark {\n${darkLines.join('\n')}\n}`;
+    let css = `:root {\n${rootLines.join('\n')}\n}\n.dark {\n${darkLines.join('\n')}\n}`;
+
+    // `html` prefix so the font-size wins over the text-sm utility class.
+    const button = BUTTON_SIZE_CSS[theme.button_size] ?? null;
+
+    if (button) {
+        css += `\nhtml [data-slot="button"] {\n  --spacing: ${button.spacing};\n  font-size: ${button.fontSize};\n}`;
+    }
+
+    return css;
 }
 
 /* ---- Color → hex (canvas; getComputedStyle does not resolve oklch) ---- */
@@ -174,6 +227,7 @@ function ctx(): CanvasRenderingContext2D | null {
                       willReadFrequently: true,
                   });
     }
+
     return sharedCtx ?? null;
 }
 
@@ -183,6 +237,7 @@ export function colorToHex(value: string): string | null {
     }
 
     const c = ctx();
+
     if (!c) {
         return null;
     }
@@ -193,8 +248,10 @@ export function colorToHex(value: string): string | null {
     const first = c.fillStyle;
     c.fillStyle = '#fff';
     c.fillStyle = value;
+
     if (first !== c.fillStyle) {
         hexCache.set(value, null);
+
         return null;
     }
 
@@ -203,22 +260,33 @@ export function colorToHex(value: string): string | null {
     c.fillStyle = value;
     c.fillRect(0, 0, 1, 1);
     const [r, g, b] = c.getImageData(0, 0, 1, 1).data;
-    const hex = '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
+    const hex =
+        '#' + [r, g, b].map((n) => n.toString(16).padStart(2, '0')).join('');
 
     hexCache.set(value, hex);
+
     return hex;
 }
 
 /* ---- Import / export ---- */
 
-const HSL_TRIPLET = /^\d+(\.\d+)?(deg)?\s+\d+(\.\d+)?%\s+\d+(\.\d+)?%(\s*\/\s*[\d.]+%?)?$/;
-const IGNORED_PREFIXES = ['shadow', 'letter-spacing', 'spacing', 'tracking', 'font-'];
+const HSL_TRIPLET =
+    /^\d+(\.\d+)?(deg)?\s+\d+(\.\d+)?%\s+\d+(\.\d+)?%(\s*\/\s*[\d.]+%?)?$/;
+const IGNORED_PREFIXES = [
+    'shadow',
+    'letter-spacing',
+    'spacing',
+    'tracking',
+    'font-',
+];
 
 function coerceValue(raw: unknown): string | null {
     if (typeof raw !== 'string') {
         return null;
     }
+
     const value = raw.trim();
+
     // Legacy shadcn/tweakcn bare HSL triplets are meant for hsl(var(--x)); wrap them.
     return HSL_TRIPLET.test(value) ? `hsl(${value})` : value;
 }
@@ -231,44 +299,71 @@ export function normalizeThemeImport(
 ): ImportResult {
     const warnings: string[] = [];
     const obj = (raw ?? {}) as Record<string, unknown>;
-    const source = (obj.cssVars ?? obj.styles ?? obj) as Record<string, unknown>;
+    const source = (obj.cssVars ?? obj.styles ?? obj) as Record<
+        string,
+        unknown
+    >;
 
-    const shared = stripPrefixes((source.theme ?? {}) as Record<string, unknown>);
+    const shared = stripPrefixes(
+        (source.theme ?? {}) as Record<string, unknown>,
+    );
     const theme = defaultWorkingTheme();
 
     if (typeof obj.name === 'string') {
         theme.name = obj.name.slice(0, 100);
     }
 
+    if (
+        typeof obj.button_size === 'string' &&
+        obj.button_size in BUTTON_SIZE_CSS
+    ) {
+        theme.button_size = obj.button_size as ButtonSize;
+    }
+
     (['light', 'dark'] as const).forEach((mode) => {
         const modeMap = source[mode];
+
         if (!modeMap || typeof modeMap !== 'object') {
             warnings.push(`No ${mode} values found; used defaults.`);
+
             return;
         }
 
-        const merged = { ...shared, ...stripPrefixes(modeMap as Record<string, unknown>) };
+        const merged = {
+            ...shared,
+            ...stripPrefixes(modeMap as Record<string, unknown>),
+        };
 
         for (const [key, rawVal] of Object.entries(merged)) {
             if (key === 'radius') {
                 const r = coerceValue(rawVal);
-                if (r && mode === 'light') theme.radius = r;
+
+                if (r && mode === 'light') {
+                    theme.radius = r;
+                }
+
                 continue;
             }
+
             if (key.startsWith('font-')) {
                 if (mode === 'light') {
                     routeFont(key, rawVal, theme, fontFamilies, warnings);
                 }
+
                 continue;
             }
+
             if (IGNORED_PREFIXES.some((p) => key.startsWith(p))) {
                 continue;
             }
+
             if (!THEME_KEYS.includes(key)) {
                 warnings.push(`Ignored unsupported variable "${key}".`);
                 continue;
             }
+
             const value = coerceValue(rawVal);
+
             if (value) {
                 theme[mode][key] = value;
             }
@@ -280,9 +375,11 @@ export function normalizeThemeImport(
 
 function stripPrefixes(map: Record<string, unknown>): Record<string, unknown> {
     const out: Record<string, unknown> = {};
+
     for (const [k, v] of Object.entries(map)) {
         out[k.replace(/^--/, '')] = v;
     }
+
     return out;
 }
 
@@ -296,12 +393,25 @@ function routeFont(
     if (typeof rawVal !== 'string') {
         return;
     }
-    const cat = key === 'font-sans' ? 'sans' : key === 'font-serif' ? 'serif' : key === 'font-mono' ? 'mono' : null;
+
+    const cat =
+        key === 'font-sans'
+            ? 'sans'
+            : key === 'font-serif'
+              ? 'serif'
+              : key === 'font-mono'
+                ? 'mono'
+                : null;
+
     if (!cat) {
         return;
     }
+
     const family = rawVal.split(',')[0].replace(/['"]/g, '').trim();
-    const match = fontFamilies.find((f) => f.toLowerCase() === family.toLowerCase());
+    const match = fontFamilies.find(
+        (f) => f.toLowerCase() === family.toLowerCase(),
+    );
+
     if (match) {
         theme.fonts[cat] = match;
     } else if (family) {
@@ -311,9 +421,18 @@ function routeFont(
 
 export function exportTheme(theme: WorkingTheme): string {
     const fontVars: Record<string, string> = {};
-    if (theme.fonts.sans) fontVars['font-sans'] = theme.fonts.sans;
-    if (theme.fonts.serif) fontVars['font-serif'] = theme.fonts.serif;
-    if (theme.fonts.mono) fontVars['font-mono'] = theme.fonts.mono;
+
+    if (theme.fonts.sans) {
+        fontVars['font-sans'] = theme.fonts.sans;
+    }
+
+    if (theme.fonts.serif) {
+        fontVars['font-serif'] = theme.fonts.serif;
+    }
+
+    if (theme.fonts.mono) {
+        fontVars['font-mono'] = theme.fonts.mono;
+    }
 
     return JSON.stringify(
         {
@@ -321,6 +440,7 @@ export function exportTheme(theme: WorkingTheme): string {
             light: theme.light,
             dark: theme.dark,
             radius: theme.radius,
+            button_size: theme.button_size,
             fonts: theme.fonts,
             // Also emit cssVars so exports round-trip into tweakcn / shadcn tooling.
             cssVars: {
@@ -336,13 +456,18 @@ export function exportTheme(theme: WorkingTheme): string {
 
 /* ---- Presets ---- */
 
-function preset(name: string, light: Partial<VarMap>, dark: Partial<VarMap>): WorkingTheme {
+function preset(
+    name: string,
+    light: Partial<VarMap>,
+    dark: Partial<VarMap>,
+): WorkingTheme {
     return {
         id: null,
         name,
         light: { ...DEFAULT_LIGHT, ...light } as VarMap,
         dark: { ...DEFAULT_DARK, ...dark } as VarMap,
         radius: DEFAULT_RADIUS,
+        button_size: DEFAULT_BUTTON_SIZE,
         fonts: { sans: null, serif: null, mono: null },
     };
 }

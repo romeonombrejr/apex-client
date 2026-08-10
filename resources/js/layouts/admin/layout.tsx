@@ -1,5 +1,4 @@
 import type { PropsWithChildren } from 'react';
-import Heading from '@/components/heading';
 
 export default function AdminLayout({ children }: PropsWithChildren) {
     return (

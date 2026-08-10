@@ -35,7 +35,9 @@ export default function SuperAdminTwoFactorChallenge() {
                             </div>
                         ) : (
                             <div className="grid gap-2">
-                                <Label htmlFor="code">Authentication code</Label>
+                                <Label htmlFor="code">
+                                    Authentication code
+                                </Label>
                                 <Input
                                     id="code"
                                     name="code"
@@ -75,5 +77,6 @@ export default function SuperAdminTwoFactorChallenge() {
 
 SuperAdminTwoFactorChallenge.layout = {
     title: 'Two-factor authentication',
-    description: 'Confirm access to your account by entering the code from your authenticator app',
+    description:
+        'Confirm access to your account by entering the code from your authenticator app',
 };

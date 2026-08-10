@@ -36,6 +36,8 @@ class ThemeRequest extends FormRequest
 
             'radius' => ['nullable', 'string', 'max:20', 'regex:'.ThemeCss::RADIUS_PATTERN],
 
+            'button_size' => ['nullable', 'string', Rule::in(array_keys(ThemeCss::BUTTON_SIZES))],
+
             'fonts' => ['nullable', 'array'],
             'fonts.sans' => ['nullable', 'string', Rule::in($families)],
             'fonts.serif' => ['nullable', 'string', Rule::in($families)],

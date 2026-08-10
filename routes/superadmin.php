@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Superadmin\BackupController;
 use App\Http\Controllers\Superadmin\DashboardController;
 use App\Http\Controllers\Superadmin\ImpersonationController;
 use App\Http\Controllers\Superadmin\LoginController;
@@ -49,6 +50,12 @@ Route::prefix('superadmin')->name('superadmin.')->group(function () {
         Route::post('tenants/{tenant}/impersonate', [ImpersonationController::class, 'store'])->name('tenants.impersonate');
 
         Route::resource('plans', PlanController::class)->except(['show', 'create', 'edit']);
+
+        // Platform-wide DB backups (per tenant + central).
+        Route::get('backups', [BackupController::class, 'index'])->name('backups.index');
+        Route::post('backups/run', [BackupController::class, 'run'])->name('backups.run');
+        Route::get('backups/{scope}/{path}/download', [BackupController::class, 'download'])->name('backups.download');
+        Route::delete('backups/{scope}/{path}', [BackupController::class, 'destroy'])->name('backups.destroy');
 
         // Account settings
         Route::prefix('settings')->name('settings.')->group(function () {

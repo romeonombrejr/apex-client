@@ -1,7 +1,7 @@
 import { usePage } from '@inertiajs/react';
 import { useEffect } from 'react';
-import { applyTheme } from '@/lib/apply-theme';
 import AppLayoutTemplate from '@/layouts/app/app-sidebar-layout';
+import { applyTheme } from '@/lib/apply-theme';
 import type { BreadcrumbItem } from '@/types';
 
 export default function AppLayout({

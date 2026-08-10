@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import {
@@ -11,11 +11,8 @@ import {
     DialogTrigger,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import {
-    exportTheme,
-    normalizeThemeImport,
-    type WorkingTheme,
-} from '@/lib/theme';
+import { exportTheme, normalizeThemeImport } from '@/lib/theme';
+import type { WorkingTheme } from '@/lib/theme';
 
 type Props = {
     working: WorkingTheme;
@@ -31,18 +28,27 @@ export default function ImportExportDialog({
     const [open, setOpen] = useState(false);
     const [text, setText] = useState('');
 
-    useEffect(() => {
-        if (open) {
+    /**
+     * The textarea is seeded with the current theme the moment the dialog
+     * opens. Doing it here rather than in an effect on `working` means a
+     * re-render upstream can't wipe JSON the user has typed in to import.
+     */
+    function handleOpenChange(next: boolean) {
+        if (next) {
             setText(exportTheme(working));
         }
-    }, [open, working]);
+
+        setOpen(next);
+    }
 
     function handleImport() {
         let parsed: unknown;
+
         try {
             parsed = JSON.parse(text);
         } catch {
             toast.error('That is not valid JSON.');
+
             return;
         }
 
@@ -65,7 +71,7 @@ export default function ImportExportDialog({
     }
 
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 <Button variant="outline" size="sm">
                     Import / Export
@@ -75,8 +81,8 @@ export default function ImportExportDialog({
                 <DialogHeader>
                     <DialogTitle>Import / Export theme</DialogTitle>
                     <DialogDescription>
-                        Copy this JSON to share the theme, or paste one in (including
-                        themes exported from tweakcn) and import.
+                        Copy this JSON to share the theme, or paste one in
+                        (including themes exported from tweakcn) and import.
                     </DialogDescription>
                 </DialogHeader>
 

@@ -30,6 +30,7 @@ class ThemeManagementTest extends TenantTestCase
             'light' => ThemeFactory::LIGHT,
             'dark' => ThemeFactory::DARK,
             'radius' => '0.5rem',
+            'button_size' => 'lg',
             'fonts' => ['sans' => 'Inter', 'serif' => null, 'mono' => null],
         ], $overrides);
     }
@@ -80,6 +81,7 @@ class ThemeManagementTest extends TenantTestCase
             'too long' => [['light' => ['primary' => str_repeat('a', 130)] + $light]],
             'missing key' => [['light' => collect($light)->except('primary')->all()]],
             'bad radius' => [['radius' => '10']],
+            'bad button size' => [['button_size' => 'huge']],
             'unknown font' => [['fonts' => ['sans' => 'Comic Papyrus', 'serif' => null, 'mono' => null]]],
         ];
     }
@@ -133,6 +135,18 @@ class ThemeManagementTest extends TenantTestCase
         $this->assertStringContainsString(':root {', $payload['css']);
         $this->assertStringContainsString('--primary:', $payload['css']);
         $this->assertNotEmpty($payload['fontLinks']);
+    }
+
+    public function test_compile_emits_button_size_block_only_when_set()
+    {
+        $default = Theme::factory()->create();
+        $this->assertStringNotContainsString('data-slot="button"', ThemeCss::compile($default));
+
+        $large = Theme::factory()->create(['name' => 'Large buttons', 'button_size' => 'lg']);
+        $css = ThemeCss::compile($large);
+
+        $this->assertStringContainsString('html [data-slot="button"]', $css);
+        $this->assertStringContainsString('--spacing: 0.275rem;', $css);
     }
 
     public function test_compile_drops_tampered_values_at_read_time()

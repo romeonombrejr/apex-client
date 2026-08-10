@@ -4,14 +4,27 @@ export type UserRow = {
     id: number;
     name: string;
     email: string;
+    avatar: string | null;
+    company: string | null;
     role: Role | null;
     created_at: string;
+    activated: boolean;
+    pending_invite: boolean;
+    /** A live session born from a link — dies with the link, revocable. */
+    link_session: boolean;
+    /** ISO expiry for pending_invite or link_session; null = never expires. */
+    link_expires_at: string | null;
+    /** Re-copyable accept URL (unused links only). */
+    link_url: string | null;
+    is_self: boolean;
+    impersonatable: boolean;
 };
 
 export type UserFormData = {
     id: number;
     name: string;
     email: string;
+    company: string | null;
     role: Role | null;
 };
 
@@ -81,6 +94,7 @@ export type AuditLogRow = {
     description: string;
     causer: string | null;
     subject_type: string | null;
+    ip: string | null;
     created_at: string;
 };
 

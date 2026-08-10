@@ -68,7 +68,9 @@ export default function PreviewPanel() {
             </Table>
 
             <div>
-                <div className="mb-2 text-xs text-muted-foreground">Chart colors</div>
+                <div className="mb-2 text-xs text-muted-foreground">
+                    Chart colors
+                </div>
                 <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((n) => (
                         <div
@@ -81,7 +83,9 @@ export default function PreviewPanel() {
             </div>
 
             <div className="rounded-lg border bg-sidebar p-3 text-sidebar-foreground">
-                <div className="text-xs text-sidebar-foreground/70">Sidebar</div>
+                <div className="text-xs text-sidebar-foreground/70">
+                    Sidebar
+                </div>
                 <div className="mt-1 rounded-md bg-sidebar-primary px-3 py-1.5 text-sm text-sidebar-primary-foreground">
                     Active item
                 </div>
@@ -93,7 +97,9 @@ export default function PreviewPanel() {
             {/* Type samples — also force Tailwind to emit font-serif / font-mono utilities */}
             <div className="space-y-1">
                 <p className="font-sans text-sm">Sans — The quick brown fox.</p>
-                <p className="font-serif text-sm">Serif — The quick brown fox.</p>
+                <p className="font-serif text-sm">
+                    Serif — The quick brown fox.
+                </p>
                 <p className="font-mono text-sm">Mono — The quick brown fox.</p>
             </div>
         </div>

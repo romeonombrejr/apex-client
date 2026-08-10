@@ -26,6 +26,7 @@ class AuditLogController extends Controller
                 'description' => $activity->description,
                 'causer' => $activity->causer?->name,
                 'subject_type' => $activity->subject_type ? class_basename($activity->subject_type) : null,
+                'ip' => $activity->properties->get('ip'),
                 'created_at' => $activity->created_at,
             ]);
 

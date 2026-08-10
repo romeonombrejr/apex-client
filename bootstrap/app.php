@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\EnsureLinkSessionIsValid;
 use App\Http\Middleware\EnsureSuiteEnabled;
 use App\Http\Middleware\EnsureTenantIsActive;
 use App\Http\Middleware\HandleAppearance;
@@ -24,6 +25,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);
 
         $middleware->web(append: [
+            // Ends sessions born from a magic link as soon as that link is
+            // revoked, expires or is superseded (see the middleware docblock).
+            EnsureLinkSessionIsValid::class,
             HandleAppearance::class,
             HandleInertiaRequests::class,
             AddLinkHeadersForPreloadedAssets::class,

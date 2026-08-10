@@ -103,7 +103,9 @@ return [
         'users' => [
             'provider' => 'users',
             'table' => env('AUTH_PASSWORD_RESET_TOKEN_TABLE', 'password_reset_tokens'),
-            'expire' => 60,
+            // 48h: reset links are handed out by an admin (no mail server),
+            // so they need to survive the copy-paste-and-forward round trip.
+            'expire' => 2880,
             'throttle' => 60,
         ],
     ],

@@ -19,12 +19,21 @@ provisions and manages every tenant.
   a tenant admin, and view cross-tenant usage.
 - **Per-tenant admin panel** — role & permission management, users, media library,
   activity log, backups, and branding/SEO settings.
-- **Live theme editor** — a tweakcn-style editor (colors, radius, fonts, light & dark) with
-  instant preview, saved themes, presets, and JSON import/export — per tenant.
+- **User accounts control** — per-action `users.*` permissions, magic access links that
+  sign people in without a mail server, admin-issued password reset links, tenant
+  impersonation, and profile photos. See [User accounts](#user-accounts) below.
+- **Live theme editor** — a tweakcn-style editor (colors, radius, button size, fonts,
+  light & dark) with instant preview, saved themes, presets, and JSON import/export —
+  per tenant.
+- **Platform-wide backups** — a super-admin Backups page covering every tenant database
+  plus the central one, with on-demand runs, downloads, health badges, and a nightly
+  `backup:all` schedule.
 - **Plans & limits** — assign plans with enforced limits (e.g. max users) per tenant.
 - **Auth** — Laravel Fortify with registration, password reset, email verification,
   two-factor, and passkeys (per tenant); a separate guard for super admins, who also get
   account settings, TOTP two-factor, and passkey sign-in.
+- **Audit trail** — every logged action records the requester's IP and user agent, pruned
+  nightly by `activitylog:clean`.
 
 ---
 
@@ -109,6 +118,60 @@ open in a browser:
 
 ---
 
+## User accounts
+
+Admins manage tenant users at `/admin/users`. The panel is built for teams with **no mail
+server**: instead of emailing credentials, an admin mints a link and hands it over.
+
+### Access links
+
+| Action | What it does |
+|---|---|
+| **Get invite link** | For a not-yet-activated account — signs them in and prompts them to set a password. |
+| **Get sign-in link** | For an activated account — signs them straight in, no password needed. |
+| **Copy** | Re-copies the account's live link from the roster. |
+| **Revoke** | Kills the link, and any session it created, immediately. |
+| **Reset link** | A standard single-use Laravel password-reset URL (valid 48h — see `config/auth.php`). |
+
+Links are chosen with a validity window (24h / 7d / 30d / never) and behave as follows:
+
+- **Reusable until revoked, superseded, or expired** — minting a new link replaces the old one.
+- **First in wins** — while the session a link created is still alive, further uses are
+  refused. It frees up on logout or once that session goes idle.
+- **Sessions live and die with their link** — revoking or replacing a link signs its holder
+  out (`EnsureLinkSessionIsValid`). Password-born sessions are never affected, and
+  completing onboarding lifts the leash.
+- Acceptance is two-step: the `GET` only shows a confirmation page, so prefetchers, link
+  scanners and chat unfurlers can't consume a link.
+
+Tokens are stored as a SHA-256 hash for lookup, plus an encrypted-at-rest copy of the
+plaintext so an admin can re-copy an active link.
+
+### Permissions
+
+The old all-or-nothing `users.manage` is split per action, so staff can hold a subset:
+
+| Permission | Grants |
+|---|---|
+| `users.view` | See the roster |
+| `users.create` | Create accounts and invite users |
+| `users.edit` | Edit an account |
+| `users.delete` | Delete an account |
+| `users.links` | Mint and revoke access links |
+| `users.reset` | Issue password reset links |
+| `users.impersonate` | View the app as another user |
+
+The migration grants all seven to any role that previously held `users.manage`, so nothing
+changes until an admin unchecks boxes in the Roles editor.
+
+### Impersonation
+
+`users.impersonate` lets an admin view the app as a tenant user, with a banner and an exit
+button on every page. Admins cannot impersonate other admins or themselves. This is
+same-domain and distinct from the super admin's cross-domain tenant impersonation.
+
+---
+
 ## Common commands
 
 ```bash
@@ -120,10 +183,16 @@ php artisan tenants:seed
 php artisan tenants:backup              # back up every tenant
 php artisan tenants:run "some:command"  # run a command in each tenant context
 
+# Backups
+php artisan backup:all                  # every tenant DB + the central one (nightly at 01:30)
+php artisan activitylog:clean           # prune audit entries past retention (nightly at 03:00)
+
 # Quality
-php artisan test                        # 76 tests
+php artisan test                        # 122 tests
 vendor/bin/pint                         # PHP formatting
 npm run types:check                     # TypeScript
+npm run lint:check                      # ESLint
+npm run format:check                    # Prettier
 npm run build
 ```
 
@@ -134,9 +203,13 @@ npm run build
 ```
 app/
   Http/Controllers/Admin/        # tenant admin panel (users, roles, media, backups…)
-  Http/Controllers/Superadmin/   # super-admin console (tenants, plans, impersonation)
+  Http/Controllers/Superadmin/   # super-admin console (tenants, plans, backups, impersonation)
+  Http/Controllers/{Invitation,Onboarding,TenantImpersonation}Controller.php
+                                 # magic-link acceptance, first-password setup, impersonation
+  Http/Middleware/EnsureLinkSessionIsValid.php   # link-bound session enforcement
   Models/                        # Tenant, Plan, SuperAdmin (central) + User, Setting… (tenant)
   Support/TenantLimits.php       # plan-limit enforcement
+  Support/TenantBackups.php      # context-aware (tenant / central) backup runner
 config/tenancy.php               # tenancy configuration
 database/migrations/             # central migrations
 database/migrations/tenant/      # tenant migrations

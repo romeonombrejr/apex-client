@@ -95,6 +95,7 @@ class ThemeFactory extends Factory
             'light' => self::LIGHT,
             'dark' => self::DARK,
             'radius' => '0.625rem',
+            'button_size' => null,
             'fonts' => null,
             'is_active' => false,
         ];
