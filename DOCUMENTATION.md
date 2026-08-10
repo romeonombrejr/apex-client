@@ -41,12 +41,25 @@ own isolated copy of the app.
 
 **Tenant database** (one per tenant, named `tenant<uuid>`):
 
-- `users`, `password_reset_tokens`, `passkeys`, two-factor columns
+- `users`, `password_reset_tokens`, `passkeys`, two-factor columns. `users` also carries
+  `company` (free text) and `avatar_path` (profile photo).
+- `user_invitations` — access links: hashed token, encrypted plaintext copy, nullable
+  expiry, and the session the link created (see §5)
 - `roles`, `permissions`, and their pivots (spatie/laravel-permission)
 - `activity_log` — the tenant's own audit log
 - `settings` — the tenant's branding/SEO (the `Setting::current()` singleton)
 - `media_folders`, `media_files`
 - `cache`, `cache_locks` — the tenant's own cache (see note below)
+
+### Audit log
+
+Both `activity_log` tables are written through spatie/laravel-activitylog. An
+`Activity::saving` hook in `AppServiceProvider` stamps the requester's **IP and user
+agent** onto every entry (security/audit purposes only — disclose it in your privacy
+policy). Console runs (the scheduler, sync commands) have no requester and are left
+unstamped rather than given a misleading synthetic `127.0.0.1`. The IP is surfaced as a
+column on the tenant audit-log page, and `activitylog:clean` prunes entries past
+`config/activitylog.php` → `delete_records_older_than_days` nightly at 03:00.
 
 ### Tenancy bootstrappers (`config/tenancy.php`)
 
@@ -85,10 +98,40 @@ Tenants are identified by **custom domain** (`InitializeTenancyByDomain`). Each 
 
 | File | Scope | Notes |
 |---|---|---|
-| `routes/web.php` | **Central** | Domain-constrained to the central host. `/` → redirects to `superadmin.login`; requires `superadmin.php`. |
+| `routes/web.php` | **Central** | Domain-constrained to the central host, behind `DiscourageSearchIndexing`. `/` → redirects to `superadmin.login`; requires `superadmin.php`. |
 | `routes/superadmin.php` | **Central** | Super-admin console (guard `superadmin`). |
-| `routes/tenant.php` | **Tenant** | Wrapped in `web`, `InitializeTenancyByDomain`, `PreventAccessFromCentralDomains`, `tenant.active`. Loads `settings.php` + `admin.php`. |
-| `routes/settings.php`, `routes/admin.php` | **Tenant** | The existing app (profile, admin CRUD) — now tenant-scoped. |
+| `routes/tenant.php` | **Tenant** | Wrapped in `web`, `InitializeTenancyByDomain`, `PreventAccessFromCentralDomains`, `tenant.active`. Loads `settings.php`, `admin.php` + `storefront.php`. |
+| `routes/settings.php`, `routes/admin.php` | **Tenant** | Profile/account settings and the admin panel — tenant-scoped. |
+
+The whole central hostname is served with `X-Robots-Tag: noindex, nofollow`
+(`DiscourageSearchIndexing`): the console is invite-only knowledge, and a header covers
+every response so the login page needs no meta tag of its own.
+
+### Public tenant routes worth knowing
+
+```
+GET   /invitations/{token}      invitations.accept        # confirmation page only
+POST  /invitations/{token}      invitations.accept.store  # consumes the link (see §5)
+GET   /onboarding/password      onboarding.password.edit  # auth, not verified
+POST  /onboarding/password      onboarding.password.update
+POST  /stop-impersonating       impersonate.leave         # reachable as the impersonated user
+```
+
+### Tenant user administration (`/admin/users`, per-action permissions)
+
+```
+GET   /admin/users                        users.view        admin.users.index
+GET   /admin/users/create                 users.create      admin.users.create
+POST  /admin/users                        users.create      admin.users.store
+POST  /admin/users/invitations            users.create      admin.users.invitations.store
+GET   /admin/users/{user}/edit            users.edit        admin.users.edit
+PUT   /admin/users/{user}                 users.edit        admin.users.update
+DEL   /admin/users/{user}                 users.delete      admin.users.destroy
+POST  /admin/users/{user}/link            users.links       admin.users.link
+DEL   /admin/users/{user}/link            users.links       admin.users.link.revoke
+POST  /admin/users/{user}/reset-link      users.reset       admin.users.reset-link
+POST  /admin/users/{user}/impersonate     users.impersonate admin.users.impersonate
+```
 
 **Tenant auth (Fortify)** — Fortify's routes (`/login`, `/register`, 2FA, passkeys) are
 scoped to tenant domains via `config/fortify.php`'s middleware
@@ -109,6 +152,10 @@ POST  /superadmin/tenants/{tenant}/domains      superadmin.tenants.domains.store
 DEL   /superadmin/tenants/{tenant}/domains/{d}  superadmin.tenants.domains.destroy
 POST  /superadmin/tenants/{tenant}/impersonate  superadmin.tenants.impersonate
 resource /superadmin/plans (index/store/update/destroy)  superadmin.plans.*
+GET   /superadmin/backups                       superadmin.backups.index
+POST  /superadmin/backups/run                   superadmin.backups.run
+GET   /superadmin/backups/{scope}/{path}/download  superadmin.backups.download
+DEL   /superadmin/backups/{scope}/{path}        superadmin.backups.destroy
 ```
 
 ---
@@ -130,6 +177,11 @@ resource /superadmin/plans (index/store/update/destroy)  superadmin.plans.*
   guard, so the super admin isn't mistaken for a tenant user).
 - `superAdmin` — the current super admin (or `null`).
 - `branding` — tenant branding when a tenant is active, otherwise config defaults.
+- `theme` — the active theme payload (tenant requests only).
+- `suites` — the suites enabled for the tenant, gating suite-scoped navigation.
+- `impersonating` — `{ name }` while an admin is viewing the app as another user, which
+  drives the exit banner (`resources/js/components/impersonation-banner.tsx`).
+- `notifications` — unread count + recent items for the bell.
 
 ### Super-admin account security
 
@@ -172,7 +224,114 @@ Relevant migration: `database/migrations/2026_06_20_000005_add_security_to_super
 
 ---
 
-## 5. Super-admin console
+## 5. User accounts & access links
+
+Tenant user administration lives at `/admin/users`
+(`app/Http/Controllers/Admin/{User,UserInvitation}Controller.php`,
+`resources/js/pages/admin/users/*`). It is built for teams running **without a mail
+server**: rather than emailing credentials, an admin mints a link and hands it over
+through whatever channel they already use.
+
+### Split `users.*` permissions
+
+The original all-or-nothing `users.manage` is split per action, so staff can hold a
+subset — typically viewing the roster and copying existing links, while minting,
+resets, edits, deletes and impersonation stay admin-only.
+
+| Permission | Grants |
+|---|---|
+| `users.view` | See the roster |
+| `users.create` | Create accounts and invite users |
+| `users.edit` | Edit an account |
+| `users.delete` | Delete an account |
+| `users.links` | Mint and revoke access links |
+| `users.reset` | Issue password reset links |
+| `users.impersonate` | View the app as another user |
+
+`2026_08_18_000001_split_users_permission` creates the seven and grants **all** of them
+to every role that held `users.manage`, then deletes the legacy permission — so
+behaviour is unchanged until an admin unchecks boxes in the Roles editor. Its `down()`
+reverses the split. `PermissionSeeder` seeds the same seven for new tenants, and
+`LoginResponse` treats any of them as "this person belongs in the admin panel".
+
+> **Route ordering matters.** In `routes/admin.php` the literal segments
+> (`users/create`, `users/invitations`) are declared *before* the `{user}` routes, so
+> they aren't swallowed as route parameters. The resource route was replaced by explicit
+> per-action routes precisely so each could carry its own permission middleware.
+
+### Access links (`UserInvitation`)
+
+One link primitive covers both cases, decided at accept time from the target's state:
+
+| Target state | Link behaves as | Default window |
+|---|---|---|
+| Not yet activated (`email_verified_at` null) | **Invitation** — signs in, then prompts for a password | 7 days |
+| Activated | **Sign-in link** — signs straight in, no password | 24 hours |
+
+The admin picks the window (24h / 7d / 30d / never). Lifecycle rules:
+
+- **Reusable** until it expires or is revoked/superseded. Minting a new link for a user
+  deletes the previous one (and kills the session it created).
+- **First in wins.** While the session a link signed in is still alive, further uses are
+  refused. It frees up on logout or once that session idles past `session.lifetime`.
+  The browser holding the live session can always re-open its own link.
+- **Two-step acceptance.** `GET /invitations/{token}` only renders a confirmation page;
+  the sign-in happens on the `POST` behind its button. Prefetchers, antivirus scanners
+  and chat unfurlers only ever `GET`, so they cannot consume a link.
+- **Sessions live and die with their link.** Acceptance stamps the session with the
+  invitation id and its bound session id; `EnsureLinkSessionIsValid` (registered in the
+  `web` stack) logs the user out on the first request after the link expires, its row
+  disappears, or the row points at a newer session. Enforcement is lazy, so no scheduler
+  is needed. Password-born sessions carry no stamp and are never touched, and completing
+  onboarding removes the stamp — the invite has converted into a credentialed account.
+
+**Token storage.** The DB keeps a SHA-256 hash of the token for lookup, plus an
+**encrypted-at-rest** copy of the plaintext (`plain_token`, `encrypted` cast) so an admin
+can re-copy a live link from the roster after closing the mint dialog. A raw DB dump
+alone therefore doesn't yield working links. Rows minted before that column existed have
+no recoverable URL — re-mint to get one.
+
+**Liveness detection** (`hasLiveSession()`, and the roster's `aliveSessionIds()`) reads
+the session store directly, so it is only answerable on the **`database` session driver**.
+On other drivers it degrades to the older replace-on-reuse behaviour rather than locking
+a link forever on unverifiable state; `EnsureLinkSessionIsValid` stays authoritative
+either way.
+
+### Onboarding
+
+A first-time acceptor lands on `/onboarding/password` (`OnboardingController`), guarded
+by an `onboarding_user_id` session flag so it can't become a no-current-password reset
+for existing accounts. Saving a password also retires the consumed invitation row and
+clears the link-session stamp. These routes sit behind `auth` but **not** `verified`,
+since acceptance is what verifies the email.
+
+### Password reset links
+
+`users.reset` issues a standard Laravel password-broker URL for an activated user and
+flashes it for copying — the admin plays courier instead of a mail server. Single-use,
+superseded by newer ones, and valid for **48 hours** (`config/auth.php` →
+`passwords.users.expire`, raised from 60 minutes so the link survives the
+copy-paste-and-forward round trip). Not-yet-activated users have no password to reset and
+are pointed at invite links instead.
+
+### Tenant impersonation
+
+`TenantImpersonationController` stashes the admin's id in `impersonator_id` and swaps the
+`web` session to the target. Same-domain with a return path, unlike the super admin's
+cross-domain token dance (§6). Admins cannot impersonate other admins or themselves.
+`stop-impersonating` lives outside the admin gate so the impersonated — possibly
+non-admin — user can reach it. Both directions are written to the tenant activity log.
+
+### Profile photos
+
+`avatar_path` on `users`, uploaded via `ProfileController@updateAvatar` to the `public`
+disk (tenant-scoped by `FilesystemTenancyBootstrapper`, so photos are isolated per
+tenant). The `User::getAvatarAttribute()` accessor is appended to every serialization as
+`avatar`, resolving to the tenant asset route or `null`; the UI falls back to initials.
+
+---
+
+## 6. Super-admin console
 
 `app/Http/Controllers/Superadmin/` + `resources/js/pages/superadmin/`.
 
@@ -208,7 +367,7 @@ aggregation job if the tenant count grows large.
 
 ---
 
-## 6. Plans & limits
+## 7. Plans & limits
 
 - A tenant's plan is stored as `tenants.plan_id` → `plans`.
 - `App\Support\TenantLimits::reachedUserLimit()` / `maxUsers()` read the current tenant's
@@ -219,7 +378,7 @@ aggregation job if the tenant count grows large.
 
 ---
 
-## 7. Branding (tenancy-aware)
+## 8. Branding (tenancy-aware)
 
 `Setting::branding()` provides app name, logo, favicon, primary color, and SEO defaults.
 Because `settings` lives only in tenant DBs, both `HandleInertiaRequests` and the
@@ -269,21 +428,50 @@ JSON import/export (tolerant of tweakcn exports).
 
 ---
 
-## 8. Backups (per-tenant)
+## 9. Backups
 
-- `RunBackupJob` backs up **whichever database is currently active**
-  (`config('database.default')`), so a tenant-admin-triggered backup dumps that tenant's
-  DB. The `local` disk is already tenant-scoped, so backup files land in the tenant's
-  storage directory.
-- `php artisan tenants:backup` loops every tenant and backs each one up in its own context
-  (for a scheduled central job).
+Everything here is **context-sensitive**: run inside an initialized tenant it dumps that
+tenant's DB into the tenant-scoped disk; run centrally it dumps the central DB into
+central storage. `App\Support\TenantBackups::inContext()` does the switching, and
+`runHere()` backs up whatever `config('database.default')` currently points at (DB only)
+before applying the retention policy.
+
+### Per-tenant (tenant admin)
+
+- `RunBackupJob` backs up the active database, so a tenant-admin-triggered backup dumps
+  that tenant's DB. The `local` disk is already tenant-scoped, so archives land in the
+  tenant's own storage directory.
+- `php artisan tenants:backup` loops every tenant and backs each one up in its own context.
+
+### Platform-wide (super admin)
+
+`Superadmin\BackupController` + `resources/js/pages/superadmin/backups.tsx` render one
+section per tenant plus the central database, each listing its archives newest-first with
+a size, a date, and a health verdict (green while the newest dump is younger than 25h — a
+daily schedule plus slack, so a slightly late run doesn't flap the badge).
+
+- **Run now** for one tenant, the central DB, or everything.
+- **Download** any archive; **delete** tenant archives. Central archives are
+  download-only — retention prunes them.
+- Archive paths travel through the URL **hex-encoded**, and are matched back against the
+  destination's real listing rather than being used as filesystem input.
+- **Restores stay out of this panel by design.** A tenant admin restores their own tenant;
+  a central restore is a deliberate SSH operation.
+
+`php artisan backup:all` is the same work as a command — central first (tiny, but it is
+the map that makes tenant dumps restorable: tenants, domains, plans, super admins), then
+every tenant. A failure is reported and never stops the rest. Scheduled nightly at 01:30
+in `routes/console.php`; retention lives in `config/backup.php`.
+
+> Notifications are disabled — there is no mailer. Health is surfaced on the super-admin
+> Backups page instead.
 
 > **Requires `mysqldump` on the PATH** (or `DB_DUMP_BINARY_PATH` set). This is an
 > environment prerequisite — the same requirement existed before multi-tenancy.
 
 ---
 
-## 9. Migrations & seeding
+## 10. Migrations & seeding
 
 - **Central migrations**: `database/migrations/`
 - **Tenant migrations**: `database/migrations/tenant/` (pointed to by
@@ -304,7 +492,7 @@ php artisan tenants:seed                # runs TenantDatabaseSeeder per tenant
 
 ---
 
-## 10. Default credentials (dev)
+## 11. Default credentials (dev)
 
 | Role | Email | Password | Where |
 |---|---|---|---|
@@ -315,7 +503,7 @@ Change these before any non-local use (they're set in the seeders).
 
 ---
 
-## 11. Local development
+## 12. Local development
 
 1. **Tenant domains don't auto-resolve on Windows.** Add hosts entries for any tenant
    domain you want to browse, e.g.:
@@ -337,7 +525,7 @@ certificates, e.g. via Caddy/LetsEncrypt) — it's not handled in code.
 
 ---
 
-## 12. Command cheat sheet
+## 13. Command cheat sheet
 
 ```bash
 # Central
@@ -350,20 +538,35 @@ php artisan tenants:seed
 php artisan tenants:backup
 php artisan tenants:run "some:command"      # run any command in each tenant context
 
+# Scheduled (see routes/console.php)
+php artisan backup:all                      # every tenant DB + central   — 01:30
+php artisan storefront:renew-subscriptions  #                             — 02:00
+php artisan activitylog:clean               # prune audit entries         — 03:00
+
 # Quality
 php artisan test
 vendor/bin/pint
 npm run types:check
+npm run lint:check
+npm run format:check
 npm run build
 ```
 
 ---
 
-## 13. Testing
+## 14. Testing
 
 Because the schema is split across databases, the test suite uses a **single unified
 schema** (`TestCase::unifiedMigrationPaths()`) that merges the central tables with the
-non-colliding tenant tables.
+non-colliding tenant tables. That list is built by **globbing** `database/migrations/
+tenant/`, rejecting only the `cache_table` and `activity_log` migrations (the central
+`activity_log`, with string morphs, is a superset of the tenant one) — so a newly added
+tenant migration is picked up with no edit here.
+
+`TestCase::refreshApplication()` also refuses to run unless the resolved connection is
+in-memory SQLite. A stale `bootstrap/cache/config.php` overrides what `phpunit.xml` sets,
+which can otherwise point `migrate:fresh` at a live dev database. If you hit that guard,
+run `php artisan config:clear` (and never `config:cache`/`optimize` in local dev).
 
 - **`TenantTestCase`** — runs each test inside an initialized tenant context on a tenant
   domain (`tenant.test`), with the DB-switch bootstrapper disabled so the unified schema
@@ -376,22 +579,41 @@ non-colliding tenant tables.
 > shares the schema across tests, so a bare test would migrate the central-only schema and
 > break others depending on run order.
 
-Current coverage: **76 tests** — the converted tenant-side suite (auth, dashboard,
-profile, security), super-admin auth + tenant management, plan limits, super-admin account
-security (profile, password, the full 2FA cycle, and the reachable passkey paths), and the
-theme editor (permission gating, value sanitization, activation exclusivity, reset,
-active-payload compilation, and compile-time tamper filtering).
+Current coverage: **122 tests** — the tenant-side suite (auth, dashboard, profile,
+security), super-admin auth + tenant management, plan limits, super-admin account security
+(profile, password, the full 2FA cycle, and the reachable passkey paths), and the theme
+editor (permission gating, value sanitization, activation exclusivity, reset,
+active-payload compilation, button-size emission, and compile-time tamper filtering).
+
+User accounts and access links are covered by:
+
+| Test | Covers |
+|---|---|
+| `Admin/AccessLinkTest` | Expiry presets and defaults, bogus presets, revocation, pruning of other users' expired links, and that a live link's URL is recoverable but encrypted at rest |
+| `Admin/PasswordResetLinkTest` | Permission gating, token issuance, refusal for a not-yet-activated user |
+| `Admin/UserCreateTest` | Company is required; a created account keeps it |
+| `Admin/UserPermissionMatrixTest` | A `users.view`-only holder sees the roster (with copyable link URLs) and is refused every other action; no `users.view` means no roster |
+| `Auth/InvitationAcceptTest` | The `GET` — including a declared prefetch — does not consume the token; the `POST` routes first-timers to onboarding and activated users into the app; reuse takes over the session; bogus tokens bounce |
+| `Auth/LinkSessionTest` | The full link-session lifecycle: expiry, revocation, supersession, second-device refusal, freeing on idle/logout, the holder reopening their own link, onboarding lifting the leash, never-expiring links surviving |
+| `Settings/AvatarTest` | Upload, replace (old file deleted), remove, non-image rejection |
+| `Superadmin/BackupPageTest` | Auth requirement, one section per tenant plus central, central archives undeletable, scope validation, 404 on a missing archive, and that `backup:all` is scheduled |
 
 ---
 
-## 14. Key files reference
+## 15. Key files reference
 
 | Concern | Path |
 |---|---|
 | Tenancy config | `config/tenancy.php` |
 | Tenant lifecycle events | `app/Providers/TenancyServiceProvider.php` |
 | Central models | `app/Models/{Tenant,Plan,SuperAdmin,SuperAdminPasskey}.php` |
-| Tenant models | `app/Models/{User,Setting,MediaFile,MediaFolder}.php` |
+| Tenant models | `app/Models/{User,UserInvitation,Setting,MediaFile,MediaFolder}.php` |
+| User administration | `app/Http/Controllers/Admin/{User,UserInvitation}Controller.php`, `resources/js/pages/admin/users/*` |
+| Access-link acceptance / onboarding | `app/Http/Controllers/{Invitation,Onboarding}Controller.php`, `resources/js/pages/auth/{invitation-accept,onboarding-password}.tsx` |
+| Link-session enforcement | `app/Http/Middleware/EnsureLinkSessionIsValid.php` |
+| Tenant impersonation | `app/Http/Controllers/TenantImpersonationController.php`, `resources/js/components/impersonation-banner.tsx` |
+| Platform backups | `app/Support/TenantBackups.php`, `app/Http/Controllers/Superadmin/BackupController.php`, `app/Console/Commands/BackupAllCommand.php` |
+| Central-domain noindex | `app/Http/Middleware/DiscourageSearchIndexing.php` |
 | Super-admin controllers | `app/Http/Controllers/Superadmin/*` |
 | Super-admin account settings | `app/Http/Controllers/Superadmin/Settings/*`, `resources/js/pages/superadmin/settings/*` |
 | Super-admin 2FA / passkeys | `app/Http/Controllers/Superadmin/{TwoFactor,TwoFactorChallenge,Passkey,PasskeyLogin}*.php` |
@@ -408,7 +630,7 @@ active-payload compilation, and compile-time tamper filtering).
 
 ---
 
-## 15. Known gaps / future work
+## 16. Known gaps / future work
 
 - **No public tenant self-signup.** Tenants are created only by the super admin. A guest
   on the central domain cannot create their own workspace yet. (Registration *within* an
@@ -418,3 +640,12 @@ active-payload compilation, and compile-time tamper filtering).
 - **Cross-tenant reporting** is per-request aggregation; move to a scheduled rollup if the
   tenant count grows.
 - **Backups** require `mysqldump` on the host.
+- **No mailer is assumed.** Invitations and password resets are delivered by the admin
+  copying a link, not by email. Wiring a real mailer would let both be sent directly — the
+  links themselves already work either way.
+- **Access-link liveness needs the `database` session driver.** On other drivers the
+  first-in-wins lock degrades to replace-on-reuse (§5); `EnsureLinkSessionIsValid` still
+  enforces revocation and expiry.
+- **`company` is free text** on `users`, deduplicated nowhere. Promoting it to a proper
+  company entity (shared credits, per-company dashboards and branding) is the natural
+  next step.

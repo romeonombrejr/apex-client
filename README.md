@@ -5,8 +5,8 @@ A **multi-tenant SaaS** built on Laravel 13 + Inertia/React (TypeScript). Each c
 provisions and manages every tenant.
 
 > **Deep dive:** this README is the quick start. For the full architecture — how
-> tenancy, auth, provisioning, impersonation, plans, branding, and backups work — see
-> **[DOCUMENTATION.md](DOCUMENTATION.md)**.
+> tenancy, auth, user accounts and access links, provisioning, impersonation, plans,
+> branding, and backups work — see **[DOCUMENTATION.md](DOCUMENTATION.md)**.
 
 ---
 
@@ -229,7 +229,7 @@ php artisan test
 
 The suite uses a unified test schema; any DB-backed test must extend `TenantTestCase`
 (tenant-side) or `CentralTestCase` (super-admin) — see
-[DOCUMENTATION.md §13](DOCUMENTATION.md#13-testing).
+[DOCUMENTATION.md §14](DOCUMENTATION.md#14-testing).
 
 ---
 
